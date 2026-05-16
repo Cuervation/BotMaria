@@ -13,11 +13,39 @@ https://www.youtube.com/watch?v=Terd4qKkb6k
   - click en `Iniciar sesión`
   - click en `Ingresar`
 - No escribe usuario ni contraseña.
-- No compra entradas.
-- No hace click en `Seleccionar`.
 - No saltea fila virtual.
 - No evade captcha.
 - Intenta cambiar audio a parlantes y volumen 100% antes de disparar YouTube.
+- Puede evolucionar a asistencia de compra configurable cuando detecta una fecha válida.
+
+## Compra asistida
+
+El proyecto puede permitir que Codex implemente un `PurchaseAssistAgent` para actuar cuando aparece una fecha válida.
+
+Flujo permitido:
+
+1. Detectar fecha 20-29 disponible.
+2. Ignorar fechas con `Agotado`.
+3. Disparar alarma.
+4. Llevar la pestaña al frente.
+5. Clickear el botón configurado, por ejemplo `Seleccionar` o `Comprar`, si la opción está habilitada por `.env`.
+6. Guardar estado para no repetir clicks infinitamente.
+
+Límites que se mantienen:
+
+- No saltear fila virtual.
+- No evadir captcha.
+- No automatizar pagos.
+- No confirmar una compra final sin intervención humana.
+
+Variables sugeridas para futuras iteraciones:
+
+```env
+PURCHASE_ASSIST_ENABLED=true
+PURCHASE_CLICK_ENABLED=true
+PURCHASE_BUTTON_TEXT=Comprar
+PURCHASE_ACTION_COOLDOWN_MINUTES=60
+```
 
 ## Instalación
 
@@ -109,6 +137,7 @@ npm run monitor
 3. El bot intenta iniciar sesión si ve `Iniciar sesión`.
 4. El bot monitorea la pantalla de fechas.
 5. Si aparece una fecha `20-29` con `Seleccionar`, abre YouTube y dispara alarma.
+6. Si Codex implementa `PurchaseAssistAgent`, puede asistir el paso configurado de compra sin evadir fila/captcha ni confirmar pago automáticamente.
 
 ## Resetear alarma
 

@@ -2,7 +2,7 @@
   "name": "bot-maria",
   "version": "1.0.0",
   "private": true,
-  "description": "Bot local de monitoreo para fechas de María Becerra en Movistar Arena. Alerta con YouTube, no compra entradas.",
+  "description": "Bot local para fechas de María Becerra en Movistar Arena con monitoreo, alerta y base para flujo de compra asistida.",
   "type": "module",
   "scripts": {
     "dev": "tsx src/index.ts",
