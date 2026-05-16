@@ -5,6 +5,7 @@ import { config } from "./config.js";
 import { MonitorAgent } from "./agents/monitorAgent.js";
 import { log, warn } from "./utils/logger.js";
 import { printStartupAscii } from "./utils/startupAscii.js";
+import { sleep } from "./utils/sleep.js";
 
 async function main(): Promise<void> {
   printStartupAscii();
@@ -21,9 +22,13 @@ async function main(): Promise<void> {
     ],
   });
 
+  await (context.pages()[0] ?? context.newPage());
+
   if (config.playwrightMinimizeOnStart && !config.playwrightHeadless) {
     const scriptPath = path.resolve("scripts/minimize-browser.ps1");
     log("Minimizando ventana de Chrome en Windows...");
+
+    await sleep(1500);
 
     spawn("powershell.exe", [
       "-ExecutionPolicy",
