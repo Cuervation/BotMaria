@@ -146,42 +146,47 @@ export class PurchaseAssistAgent {
     page: Page,
     match: Extract<DateDetectionResult, { found: true }>,
   ): Promise<ButtonCandidate | null> {
-    const labels = [this.appConfig.purchaseButtonText, this.appConfig.purchaseFallbackButtonText];
-    const seen = new Set<string>();
     const actionRegex = new RegExp(this.appConfig.availableActionTextRegex);
 
-    for (const label of labels) {
-      const trimmed = label.trim();
-      if (!trimmed || seen.has(trimmed.toLowerCase())) continue;
-      seen.add(trimmed.toLowerCase());
+    const allButtons = page.locator('button, a, [role="button"]');
+    const total = await allButtons.count().catch(() => 0);
 
-      const locator = page.locator('button, a, [role="button"]').filter({
-        hasText: new RegExp(escapeRegex(trimmed), "i"),
-      });
-      const total = await locator.count().catch(() => 0);
+    for (let index = 0; index < Math.min(total, 60); index += 1) {
+      const candidate = allButtons.nth(index);
+      const visible = await candidate.isVisible({ timeout: 1000 }).catch(() => false);
+      if (!visible) continue;
 
-      for (let index = 0; index < Math.min(total, 20); index += 1) {
-        const candidate = locator.nth(index);
-        const visible = await candidate.isVisible({ timeout: 1000 }).catch(() => false);
-        if (!visible) continue;
+      const container = candidate.locator('xpath=ancestor::*[self::article or self::li or self::section or self::div][1]');
+      const containerText = await container.innerText({ timeout: 2000 }).catch(() => "");
+      if (!containerText) continue;
 
-        const container = candidate.locator('xpath=ancestor::*[self::article or self::li or self::section or self::div][1]');
-        const containerText = await container.innerText({ timeout: 2000 }).catch(() => "");
-        if (!containerText) continue;
+      const parsed = parseDateCardText(containerText, actionRegex);
+      if (!parsed.day || !parsed.hasActionText || parsed.isSoldOut) continue;
+      if (parsed.day !== match.day) continue;
+      if (!sameText(parsed.month, match.month)) continue;
+      if (!sameText(parsed.time, match.time)) continue;
 
-        const parsed = parseDateCardText(containerText, actionRegex);
-        if (!parsed.day || !parsed.hasActionText || parsed.isSoldOut) continue;
-        if (parsed.day !== match.day) continue;
-        if (!sameText(parsed.month, match.month)) continue;
-        if (!sameText(parsed.time, match.time)) continue;
+      const preferredLabels = normalizeText(containerText).includes("seleccionar")
+        ? ["Seleccionar", this.appConfig.purchaseButtonText, this.appConfig.purchaseFallbackButtonText]
+        : [this.appConfig.purchaseButtonText, this.appConfig.purchaseFallbackButtonText, "Seleccionar"];
 
-        return {
-          label: trimmed,
-          click: async () => {
-            await candidate.scrollIntoViewIfNeeded().catch(() => undefined);
-            await candidate.click({ timeout: 5000 });
-          },
-        };
+      for (const label of preferredLabels) {
+        const trimmed = label.trim();
+        if (!trimmed) continue;
+
+        const labelMatchesButton = new RegExp(escapeRegex(trimmed), "i");
+        const buttonText = await candidate.textContent().catch(() => "");
+        const isLabelMatch = buttonText ? labelMatchesButton.test(buttonText) : false;
+
+        if (isLabelMatch || normalizeText(containerText).includes(normalizeText(trimmed))) {
+          return {
+            label: trimmed,
+            click: async () => {
+              await candidate.scrollIntoViewIfNeeded().catch(() => undefined);
+              await candidate.click({ timeout: 5000 });
+            },
+          };
+        }
       }
     }
 

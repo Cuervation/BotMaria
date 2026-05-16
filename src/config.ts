@@ -25,7 +25,7 @@ const envSchema = z.object({
     message: "CHECK_INTERVAL_MS no puede ser menor a 30000 para no spamear el sitio.",
   }),
 
-  ALARM_YOUTUBE_URL: z.string().url().default("https://www.youtube.com/watch?v=Terd4qKkb6k"),
+  ALARM_YOUTUBE_URL: z.string().url().default("https://www.youtube.com/watch?v=vOapgSfSN1s&list=RDEMCgLb_8NFlBz0UcgoUIrqFQ&start_radio=1"),
   ALARM_COOLDOWN_MINUTES: intFromEnv(60).refine((value) => value >= 1),
 
   PLAYWRIGHT_USER_DATA_DIR: z.string().default(".playwright-profile"),

@@ -4,7 +4,7 @@ Bot local de monitoreo y asistencia de compra para fechas de María Becerra en M
 
 Cuando aparece una fecha disponible cuyo día empieza con `2` —por ejemplo 20, 21, 22, etc.— abre este video de YouTube como alarma:
 
-https://www.youtube.com/watch?v=Terd4qKkb6k
+https://www.youtube.com/watch?v=vOapgSfSN1s&list=RDEMCgLb_8NFlBz0UcgoUIrqFQ&start_radio=1
 
 ## Qué hace
 
