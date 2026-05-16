@@ -1,6 +1,6 @@
 # BotMaria
 
-Bot local de monitoreo para fechas de María Becerra en Movistar Arena.
+Bot local de monitoreo y asistencia de compra para fechas de María Becerra en Movistar Arena.
 
 Cuando aparece una fecha disponible cuyo día empieza con `2` —por ejemplo 20, 21, 22, etc.— abre este video de YouTube como alarma:
 
@@ -13,37 +13,49 @@ https://www.youtube.com/watch?v=Terd4qKkb6k
   - click en `Iniciar sesión`
   - click en `Ingresar`
 - No escribe usuario ni contraseña.
-- No saltea fila virtual.
-- No evade captcha.
+- Monitorea fila virtual / waiting room y puede continuar cuando el sitio habilite controles normales.
 - Intenta cambiar audio a parlantes y volumen 100% antes de disparar YouTube.
-- Puede evolucionar a asistencia de compra configurable cuando detecta una fecha válida.
+- Permite evolucionar a asistencia de compra configurable cuando detecta una fecha válida.
+
+## Fila virtual / waiting room
+
+El bot puede monitorear una fila virtual, esperar y continuar cuando el sitio habilite controles normales.
+
+Variables sugeridas:
+
+```env
+QUEUE_MONITOR_ENABLED=true
+QUEUE_CONTINUE_WHEN_AVAILABLE=true
+```
+
+Límites técnicos que se mantienen:
+
+- No evadir captcha.
+- No romper protecciones técnicas del sitio.
+- No falsificar turnos.
+- No vulnerar el sistema de fila.
 
 ## Compra asistida
 
-El proyecto puede permitir que Codex implemente un `PurchaseAssistAgent` para actuar cuando aparece una fecha válida.
+El proyecto permite que Codex implemente un `PurchaseAssistAgent` para actuar cuando aparece una fecha válida.
 
-Flujo permitido:
+Flujo esperado:
 
 1. Detectar fecha 20-29 disponible.
 2. Ignorar fechas con `Agotado`.
 3. Disparar alarma.
 4. Llevar la pestaña al frente.
-5. Clickear el botón configurado, por ejemplo `Seleccionar` o `Comprar`, si la opción está habilitada por `.env`.
+5. Clickear el botón configurado, por ejemplo `Comprar` o `Seleccionar`, si la opción está habilitada por `.env`.
 6. Guardar estado para no repetir clicks infinitamente.
+7. Detenerse ante captcha, pago final o confirmación irreversible.
 
-Límites que se mantienen:
-
-- No saltear fila virtual.
-- No evadir captcha.
-- No automatizar pagos.
-- No confirmar una compra final sin intervención humana.
-
-Variables sugeridas para futuras iteraciones:
+Variables:
 
 ```env
 PURCHASE_ASSIST_ENABLED=true
 PURCHASE_CLICK_ENABLED=true
 PURCHASE_BUTTON_TEXT=Comprar
+PURCHASE_FALLBACK_BUTTON_TEXT=Seleccionar
 PURCHASE_ACTION_COOLDOWN_MINUTES=60
 ```
 
@@ -73,6 +85,11 @@ CHECK_INTERVAL_MS=30000
 LOGIN_ENABLED=true
 LOGIN_START_TEXT=Iniciar sesión
 LOGIN_SUBMIT_TEXT=Ingresar
+
+PURCHASE_ASSIST_ENABLED=true
+PURCHASE_CLICK_ENABLED=true
+PURCHASE_BUTTON_TEXT=Comprar
+PURCHASE_FALLBACK_BUTTON_TEXT=Seleccionar
 ```
 
 Podés dejar `MONITOR_URL` vacío. En ese caso el navegador abre y vos navegás manualmente hasta Movistar Arena. El bot monitorea la página activa.
@@ -135,9 +152,10 @@ npm run monitor
 1. Ejecutá `npm run dev`.
 2. Si `MONITOR_URL` está vacío, navegá manualmente hasta Movistar Arena.
 3. El bot intenta iniciar sesión si ve `Iniciar sesión`.
-4. El bot monitorea la pantalla de fechas.
-5. Si aparece una fecha `20-29` con `Seleccionar`, abre YouTube y dispara alarma.
-6. Si Codex implementa `PurchaseAssistAgent`, puede asistir el paso configurado de compra sin evadir fila/captcha ni confirmar pago automáticamente.
+4. El bot monitorea la pantalla de fechas o la fila virtual.
+5. Si aparece una fecha `20-29` con `Seleccionar` / `Comprar`, abre YouTube y dispara alarma.
+6. Si Codex implementa `PurchaseAssistAgent`, puede clickear el botón configurado y avanzar hasta donde el flujo normal del sitio lo permita.
+7. Ante captcha, pago final o confirmación irreversible, debe quedar intervención humana.
 
 ## Resetear alarma
 
@@ -151,6 +169,20 @@ Para resetear:
 
 ```bash
 del state\alarm-fired.json
+```
+
+## Resetear acción de compra asistida
+
+Cuando Codex implemente `PurchaseAssistAgent`, debería usar:
+
+```txt
+state/purchase-action-fired.json
+```
+
+Para resetear:
+
+```bash
+del state\purchase-action-fired.json
 ```
 
 ## Probar parser sin esperar a la web real

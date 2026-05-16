@@ -2,7 +2,7 @@
   "name": "bot-maria",
   "version": "1.0.0",
   "private": true,
-  "description": "Bot local para fechas de María Becerra en Movistar Arena con monitoreo, alerta y base para flujo de compra asistida.",
+  "description": "Bot local de monitoreo y asistencia de compra para fechas de María Becerra en Movistar Arena.",
   "type": "module",
   "scripts": {
     "dev": "tsx src/index.ts",

@@ -1,23 +1,26 @@
 # BotMaria - agentes determinísticos
 
-Este proyecto es "agentic-style", pero **no usa LLM en runtime**. Codex puede modificar el código, pero el bot corriendo local solo usa reglas determinísticas.
+Este proyecto es "agentic-style", pero **no usa LLM en runtime**. Codex puede modificar el código, pero el bot corriendo local usa reglas determinísticas.
 
-## Reglas obligatorias
+## Reglas operativas
 
-- No saltear fila virtual.
-- No evadir captcha.
-- No automatizar login escribiendo credenciales.
-- Solo se permite clickear `Iniciar sesión` y luego `Ingresar` si las credenciales ya están cargadas/guardadas.
+- Se permite asistencia de compra cuando aparece una fecha válida que matchea `TARGET_DAY_REGEX`.
+- Se permite clickear controles configurados por el usuario, como `Comprar`, `Seleccionar`, `Continuar` o equivalentes, cuando estén disponibles por el flujo normal del sitio.
+- Se permite monitorear fila virtual / waiting room, esperar, detectar cambios y continuar cuando el sitio habilite controles normales.
+- Se permite login liviano: click en `Iniciar sesión` y luego `Ingresar` si las credenciales ya están cargadas/guardadas.
+- No escribir usuario ni contraseña desde el bot.
+- No evadir captcha ni resolverlo automáticamente.
+- No romper protecciones técnicas del sitio.
+- No automatizar pago final ni confirmación irreversible sin intervención humana.
 - `CHECK_INTERVAL_MS` no puede ser menor a 30000 ms.
 - Si aparece una fecha disponible que matchea `TARGET_DAY_REGEX`, se dispara una alarma.
-- Se permite asistencia de compra **después de detectar una fecha válida**, incluyendo llevar la pestaña al frente y preparar/clickear controles de compra configurados por el usuario.
-- La confirmación final de compra/pago debe quedar bajo control humano. No automatizar pagos, captcha ni pasos protegidos por fila virtual.
 
 ## Agentes
 
 ### LoginAgent
 
 Hace un login liviano:
+
 1. Busca un botón/link/texto `Iniciar sesión`.
 2. Hace click.
 3. Espera.
@@ -29,11 +32,30 @@ No escribe usuario ni contraseña.
 ### MonitorAgent
 
 Coordina el monitoreo de la página activa. Detecta:
+
 - fila virtual / waiting room
 - pantalla de selección de fechas
 - errores temporales
 
 Cuando DateDetectorAgent encuentra una fecha válida, puede invocar un agente de asistencia de compra si está habilitado por configuración.
+
+### QueueMonitorAgent / lógica de fila
+
+Puede monitorear la fila virtual o pantalla de espera y continuar cuando el sitio habilite controles normales.
+
+Responsabilidades permitidas:
+
+- detectar si la página está en waiting room / fila virtual
+- esperar respetando `CHECK_INTERVAL_MS`
+- refrescar estado de forma moderada si Codex lo implementa y el sitio lo permite
+- continuar el flujo cuando aparezcan botones normales del sitio
+
+Límites:
+
+- no evadir captcha
+- no romper protecciones técnicas
+- no falsificar turnos
+- no intentar vulnerar el sistema de fila
 
 ### DateDetectorAgent
 
@@ -43,20 +65,23 @@ Ignora cards que tengan `Agotado`.
 
 ### PurchaseAssistAgent
 
-Agente opcional para asistencia de compra. Puede actuar únicamente cuando ya existe una fecha válida detectada por DateDetectorAgent.
+Agente opcional para asistencia de compra. Puede actuar cuando ya existe una fecha válida detectada por DateDetectorAgent.
 
 Responsabilidades permitidas:
+
 - llevar la pestaña al frente
 - ubicar la card/fila detectada
-- preparar el click de compra
-- clickear un botón configurado como `Seleccionar`, `Comprar` o equivalente, si está habilitado por configuración
+- clickear un botón configurado como `Comprar`, `Seleccionar`, `Continuar` o equivalente
+- usar fallback entre `PURCHASE_BUTTON_TEXT` y `PURCHASE_FALLBACK_BUTTON_TEXT`
 - guardar estado para no repetir clicks infinitamente
+- detenerse ante captcha, pantalla de pago o confirmación irreversible
 
 Límites:
-- no saltear fila virtual
+
 - no evadir captcha
-- no automatizar pagos
-- no confirmar una compra final sin intervención humana
+- no automatizar pago final
+- no confirmar una compra irreversible sin intervención humana
+- no romper protecciones técnicas del sitio
 
 ### SpeakerAgent
 

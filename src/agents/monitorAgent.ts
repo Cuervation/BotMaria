@@ -3,6 +3,7 @@ import type { AppConfig } from "../config.js";
 import { DateDetectorAgent } from "./dateDetectorAgent.js";
 import { LoginAgent } from "./loginAgent.js";
 import { AlarmAgent } from "./alarmAgent.js";
+import { PurchaseAssistAgent } from "./purchaseAssistAgent.js";
 import { log, warn } from "../utils/logger.js";
 import { sleep } from "../utils/sleep.js";
 
@@ -10,6 +11,7 @@ export class MonitorAgent {
   private readonly loginAgent: LoginAgent;
   private readonly dateDetectorAgent: DateDetectorAgent;
   private readonly alarmAgent: AlarmAgent;
+  private readonly purchaseAssistAgent: PurchaseAssistAgent;
 
   constructor(
     private readonly context: BrowserContext,
@@ -18,6 +20,7 @@ export class MonitorAgent {
     this.loginAgent = new LoginAgent(appConfig);
     this.dateDetectorAgent = new DateDetectorAgent(new RegExp(appConfig.targetDayRegex));
     this.alarmAgent = new AlarmAgent(context, appConfig);
+    this.purchaseAssistAgent = new PurchaseAssistAgent(appConfig);
   }
 
   async getActivePage(): Promise<Page> {
@@ -65,6 +68,7 @@ export class MonitorAgent {
 
         if (result.found) {
           await this.alarmAgent.fire(result);
+          await this.purchaseAssistAgent.assist(page, result);
         } else {
           log(`Todavía no apareció fecha veintipico disponible. reason=${result.reason}`);
         }

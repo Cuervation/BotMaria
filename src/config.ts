@@ -41,6 +41,12 @@ const envSchema = z.object({
   SPEAKER_DEVICE_NAME: z.string().default("Altavoces"),
   FORCE_SYSTEM_VOLUME: boolFromEnv(true),
   SPEAKER_SCRIPT_PATH: z.string().default("scripts/set-speakers.ps1"),
+
+  PURCHASE_ASSIST_ENABLED: boolFromEnv(true),
+  PURCHASE_CLICK_ENABLED: boolFromEnv(true),
+  PURCHASE_BUTTON_TEXT: z.string().default("Comprar"),
+  PURCHASE_FALLBACK_BUTTON_TEXT: z.string().default("Seleccionar"),
+  PURCHASE_ACTION_COOLDOWN_MINUTES: intFromEnv(60).refine((value) => value >= 1),
 });
 
 const parsed = envSchema.parse(process.env);
@@ -73,6 +79,12 @@ export const config = {
   speakerDeviceName: parsed.SPEAKER_DEVICE_NAME,
   forceSystemVolume: parsed.FORCE_SYSTEM_VOLUME,
   speakerScriptPath: path.resolve(parsed.SPEAKER_SCRIPT_PATH),
+
+  purchaseAssistEnabled: parsed.PURCHASE_ASSIST_ENABLED,
+  purchaseClickEnabled: parsed.PURCHASE_CLICK_ENABLED,
+  purchaseButtonText: parsed.PURCHASE_BUTTON_TEXT,
+  purchaseFallbackButtonText: parsed.PURCHASE_FALLBACK_BUTTON_TEXT,
+  purchaseActionCooldownMinutes: parsed.PURCHASE_ACTION_COOLDOWN_MINUTES,
 };
 
 export type AppConfig = typeof config;
