@@ -2,6 +2,7 @@ import path from "node:path";
 import type { Page } from "playwright";
 import type { AppConfig } from "../config.js";
 import type { DateDetectionResult } from "./dateDetectorAgent.js";
+import { parseDateCardText } from "./dateDetectorAgent.js";
 import { log, warn } from "../utils/logger.js";
 import { readJsonFile, writeJsonFile } from "../utils/fsState.js";
 import { sleep } from "../utils/sleep.js";
@@ -20,7 +21,6 @@ type PurchaseActionState = {
 
 type ButtonCandidate = {
   label: string;
-  text: string;
   click: () => Promise<void>;
 };
 
@@ -35,15 +35,6 @@ function normalizeText(value: string): string {
 function sameText(a: string | null | undefined, b: string | null | undefined): boolean {
   if (!a || !b) return true;
   return normalizeText(a) === normalizeText(b);
-}
-
-function matchesDetectedDate(rawText: string, match: Extract<DateDetectionResult, { found: true }>): boolean {
-  const normalized = normalizeText(rawText);
-  return normalized.includes(` ${match.day.toLowerCase()} `)
-    || normalized.startsWith(`${match.day.toLowerCase()} `)
-    || normalized.includes(` ${match.day.toLowerCase()}\n`)
-    || normalized.includes(`\n${match.day.toLowerCase()} `)
-    || normalized.includes(match.day.toLowerCase());
 }
 
 export class PurchaseAssistAgent {
@@ -66,7 +57,7 @@ export class PurchaseAssistAgent {
 
     const recentState = await this.getRecentState();
     if (recentState) {
-      log("Purchase action fired recently, skipping duplicate click.", recentState);
+      log("Purchase assist already fired recently, skipping duplicate action.", recentState);
       return;
     }
 
@@ -84,12 +75,14 @@ export class PurchaseAssistAgent {
       return;
     }
 
-    await button.click().catch(async (err) => {
+    log("Intentando click de compra asistida...");
+
+    await button.click().catch((err) => {
       warn(`No pude clickear el botón ${button.label}.`, err);
       throw err;
     });
 
-    log(`PurchaseAssistAgent clickeó: ${button.label}`);
+    log("Click de compra asistida realizado sobre fecha detectada");
 
     const state: PurchaseActionState = {
       firedAt: new Date().toISOString(),
@@ -155,6 +148,7 @@ export class PurchaseAssistAgent {
   ): Promise<ButtonCandidate | null> {
     const labels = [this.appConfig.purchaseButtonText, this.appConfig.purchaseFallbackButtonText];
     const seen = new Set<string>();
+    const actionRegex = new RegExp(this.appConfig.availableActionTextRegex);
 
     for (const label of labels) {
       const trimmed = label.trim();
@@ -175,20 +169,14 @@ export class PurchaseAssistAgent {
         const containerText = await container.innerText({ timeout: 2000 }).catch(() => "");
         if (!containerText) continue;
 
-        const normalizedContainerText = normalizeText(containerText);
-        if (!matchesDetectedDate(normalizedContainerText, match)) continue;
-
-        const parsed = await this.extractCandidateDate(containerText);
-        if (!parsed) continue;
-
+        const parsed = parseDateCardText(containerText, actionRegex);
+        if (!parsed.day || !parsed.hasActionText || parsed.isSoldOut) continue;
         if (parsed.day !== match.day) continue;
         if (!sameText(parsed.month, match.month)) continue;
         if (!sameText(parsed.time, match.time)) continue;
-        if (parsed.isSoldOut) continue;
 
         return {
           label: trimmed,
-          text: containerText,
           click: async () => {
             await candidate.scrollIntoViewIfNeeded().catch(() => undefined);
             await candidate.click({ timeout: 5000 });
@@ -198,23 +186,5 @@ export class PurchaseAssistAgent {
     }
 
     return null;
-  }
-
-  private async extractCandidateDate(rawText: string): Promise<{
-    day: string | null;
-    month: string | null;
-    time: string | null;
-    isSoldOut: boolean;
-  } | null> {
-    const { parseDateCardText } = await import("./dateDetectorAgent.js");
-    const parsed = parseDateCardText(rawText);
-    if (!parsed.day) return null;
-
-    return {
-      day: parsed.day,
-      month: parsed.month,
-      time: parsed.time,
-      isSoldOut: parsed.isSoldOut,
-    };
   }
 }

@@ -14,8 +14,11 @@ https://www.youtube.com/watch?v=Terd4qKkb6k
   - click en `Ingresar`
 - No escribe usuario ni contraseña.
 - Monitorea fila virtual / waiting room y puede continuar cuando el sitio habilite controles normales.
+- Si todavía no está en la pantalla de fechas, puede clickear el botón general `Comprar`
+  para entrar al flujo del evento.
 - Intenta cambiar audio a parlantes y volumen 100% antes de disparar YouTube.
-- Permite evolucionar a asistencia de compra configurable cuando detecta una fecha válida.
+- Detecta fechas válidas con acción `Seleccionar` o `Comprar`.
+- Puede hacer asistencia de compra configurable dentro de la misma card/fila detectada.
 
 ## Fila virtual / waiting room
 
@@ -35,9 +38,33 @@ Límites técnicos que se mantienen:
 - No falsificar turnos.
 - No vulnerar el sistema de fila.
 
+## Entrada al flujo de fechas
+
+Si el bot todavía no está en la pantalla de fechas, puede clickear el botón general
+`Comprar` para entrar al flujo del evento.
+
+Variables:
+
+```env
+ENTRY_TO_DATES_ENABLED=true
+ENTRY_TO_DATES_BUTTON_TEXT=Comprar
+ENTRY_TO_DATES_WAIT_MS=5000
+```
+
+## Texto de acción disponible
+
+Las cards/filas de fechas se detectan buscando texto de acción como `Seleccionar`
+o `Comprar`.
+
+Variable:
+
+```env
+AVAILABLE_ACTION_TEXT_REGEX=Seleccionar|Comprar
+```
+
 ## Compra asistida
 
-El proyecto permite que Codex implemente un `PurchaseAssistAgent` para actuar cuando aparece una fecha válida.
+El proyecto incluye un `PurchaseAssistAgent` para actuar cuando aparece una fecha válida.
 
 Flujo esperado:
 
@@ -45,9 +72,10 @@ Flujo esperado:
 2. Ignorar fechas con `Agotado`.
 3. Disparar alarma.
 4. Llevar la pestaña al frente.
-5. Clickear el botón configurado, por ejemplo `Comprar` o `Seleccionar`, si la opción está habilitada por `.env`.
-6. Guardar estado para no repetir clicks infinitamente.
-7. Detenerse ante captcha, pago final o confirmación irreversible.
+5. Buscar el botón configurado, primero `Comprar` y luego `Seleccionar`.
+6. Clickear dentro de la misma card/fila detectada si la opción está habilitada por `.env`.
+7. Guardar estado para no repetir clicks infinitamente.
+8. Detenerse ante captcha, pago final o confirmación irreversible.
 
 Variables:
 
@@ -85,11 +113,21 @@ CHECK_INTERVAL_MS=30000
 LOGIN_ENABLED=true
 LOGIN_START_TEXT=Iniciar sesión
 LOGIN_SUBMIT_TEXT=Ingresar
+ENTRY_TO_DATES_ENABLED=true
+ENTRY_TO_DATES_BUTTON_TEXT=Comprar
+ENTRY_TO_DATES_WAIT_MS=5000
+AVAILABLE_ACTION_TEXT_REGEX=Seleccionar|Comprar
 
 PURCHASE_ASSIST_ENABLED=true
 PURCHASE_CLICK_ENABLED=true
 PURCHASE_BUTTON_TEXT=Comprar
 PURCHASE_FALLBACK_BUTTON_TEXT=Seleccionar
+```
+
+Para testing, podés usar:
+
+```env
+TARGET_DAY_REGEX=^(19|2\d)$
 ```
 
 Podés dejar `MONITOR_URL` vacío. En ese caso el navegador abre y vos navegás manualmente hasta Movistar Arena. El bot monitorea la página activa.
@@ -153,9 +191,10 @@ npm run monitor
 2. Si `MONITOR_URL` está vacío, navegá manualmente hasta Movistar Arena.
 3. El bot intenta iniciar sesión si ve `Iniciar sesión`.
 4. El bot monitorea la pantalla de fechas o la fila virtual.
-5. Si aparece una fecha `20-29` con `Seleccionar` / `Comprar`, abre YouTube y dispara alarma.
-6. Si Codex implementa `PurchaseAssistAgent`, puede clickear el botón configurado y avanzar hasta donde el flujo normal del sitio lo permita.
-7. Ante captcha, pago final o confirmación irreversible, debe quedar intervención humana.
+5. Si todavía no está en la pantalla de fechas, clickea el botón general `Comprar`.
+6. Si aparece una fecha `19` o `20-29` con `Seleccionar` / `Comprar`, abre YouTube y dispara alarma.
+7. Luego intenta la compra asistida dentro de la misma card/fila detectada si está habilitada.
+8. Ante captcha, pago final o confirmación irreversible, debe quedar intervención humana.
 
 ## Resetear alarma
 
@@ -172,8 +211,6 @@ del state\alarm-fired.json
 ```
 
 ## Resetear acción de compra asistida
-
-Cuando Codex implemente `PurchaseAssistAgent`, debería usar:
 
 ```txt
 state/purchase-action-fired.json

@@ -37,10 +37,19 @@ const envSchema = z.object({
   LOGIN_WAIT_MS: intFromEnv(3000),
   POST_LOGIN_WAIT_MS: intFromEnv(5000),
 
+  QUEUE_MONITOR_ENABLED: boolFromEnv(true),
+  QUEUE_CONTINUE_WHEN_AVAILABLE: boolFromEnv(true),
+
+  ENTRY_TO_DATES_ENABLED: boolFromEnv(true),
+  ENTRY_TO_DATES_BUTTON_TEXT: z.string().default("Comprar"),
+  ENTRY_TO_DATES_WAIT_MS: intFromEnv(5000),
+
   FORCE_SPEAKERS: boolFromEnv(true),
   SPEAKER_DEVICE_NAME: z.string().default("Altavoces"),
   FORCE_SYSTEM_VOLUME: boolFromEnv(true),
   SPEAKER_SCRIPT_PATH: z.string().default("scripts/set-speakers.ps1"),
+
+  AVAILABLE_ACTION_TEXT_REGEX: z.string().default("Seleccionar|Comprar"),
 
   PURCHASE_ASSIST_ENABLED: boolFromEnv(true),
   PURCHASE_CLICK_ENABLED: boolFromEnv(true),
@@ -55,6 +64,12 @@ try {
   new RegExp(parsed.TARGET_DAY_REGEX);
 } catch {
   throw new Error(`TARGET_DAY_REGEX inválido: ${parsed.TARGET_DAY_REGEX}`);
+}
+
+try {
+  new RegExp(parsed.AVAILABLE_ACTION_TEXT_REGEX);
+} catch {
+  throw new Error(`AVAILABLE_ACTION_TEXT_REGEX inválido: ${parsed.AVAILABLE_ACTION_TEXT_REGEX}`);
 }
 
 export const config = {
@@ -75,10 +90,19 @@ export const config = {
   loginWaitMs: parsed.LOGIN_WAIT_MS,
   postLoginWaitMs: parsed.POST_LOGIN_WAIT_MS,
 
+  queueMonitorEnabled: parsed.QUEUE_MONITOR_ENABLED,
+  queueContinueWhenAvailable: parsed.QUEUE_CONTINUE_WHEN_AVAILABLE,
+
+  entryToDatesEnabled: parsed.ENTRY_TO_DATES_ENABLED,
+  entryToDatesButtonText: parsed.ENTRY_TO_DATES_BUTTON_TEXT,
+  entryToDatesWaitMs: parsed.ENTRY_TO_DATES_WAIT_MS,
+
   forceSpeakers: parsed.FORCE_SPEAKERS,
   speakerDeviceName: parsed.SPEAKER_DEVICE_NAME,
   forceSystemVolume: parsed.FORCE_SYSTEM_VOLUME,
   speakerScriptPath: path.resolve(parsed.SPEAKER_SCRIPT_PATH),
+
+  availableActionTextRegex: parsed.AVAILABLE_ACTION_TEXT_REGEX,
 
   purchaseAssistEnabled: parsed.PURCHASE_ASSIST_ENABLED,
   purchaseClickEnabled: parsed.PURCHASE_CLICK_ENABLED,

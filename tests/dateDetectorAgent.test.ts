@@ -33,3 +33,12 @@ test("soporta saltos de línea", () => {
   assert.equal(parsed.time, "21:00 hs");
   assert.equal(parsed.hasSelect, true);
 });
+
+test("soporta acción Comprar como texto válido", () => {
+  const parsed = parseDateCardText("19 Noviembre 21:00 hs Comprar", /Seleccionar|Comprar/i);
+
+  assert.equal(parsed.day, "19");
+  assert.equal(parsed.month, "Noviembre");
+  assert.equal(parsed.time, "21:00 hs");
+  assert.equal(parsed.hasActionText, true);
+});

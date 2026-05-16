@@ -47,6 +47,9 @@ export class LoginAgent {
     if (now - this.lastAttemptAt < 15000) return;
     this.lastAttemptAt = now;
 
+    log("Esperando 2 segundos antes de buscar el botón de login...");
+    await sleep(2000);
+
     log(`Buscando botón de login: "${this.appConfig.loginStartText}"`);
 
     const clickedLogin = await clickFirstVisibleByText(page, this.appConfig.loginStartText);

@@ -5,6 +5,7 @@ Este proyecto es "agentic-style", pero **no usa LLM en runtime**. Codex puede mo
 ## Reglas operativas
 
 - Se permite asistencia de compra cuando aparece una fecha válida que matchea `TARGET_DAY_REGEX`.
+- Se permite clickear el botón general `Comprar` para entrar al flujo de fechas si todavía no está cargada esa pantalla.
 - Se permite clickear controles configurados por el usuario, como `Comprar`, `Seleccionar`, `Continuar` o equivalentes, cuando estén disponibles por el flujo normal del sitio.
 - Se permite monitorear fila virtual / waiting room, esperar, detectar cambios y continuar cuando el sitio habilite controles normales.
 - Se permite login liviano: click en `Iniciar sesión` y luego `Ingresar` si las credenciales ya están cargadas/guardadas.
@@ -39,6 +40,11 @@ Coordina el monitoreo de la página activa. Detecta:
 
 Cuando DateDetectorAgent encuentra una fecha válida, puede invocar un agente de asistencia de compra si está habilitado por configuración.
 
+### EntryToDatesAgent
+
+Si todavía no aparece la pantalla de fechas, busca el botón general `Comprar`
+y lo clickea para entrar al flujo del evento.
+
 ### QueueMonitorAgent / lógica de fila
 
 Puede monitorear la fila virtual o pantalla de espera y continuar cuando el sitio habilite controles normales.
@@ -59,7 +65,7 @@ Límites:
 
 ### DateDetectorAgent
 
-Busca cards/filas con `Seleccionar`, parsea día/mes/hora y valida si el día matchea `TARGET_DAY_REGEX`.
+Busca cards/filas con `Seleccionar` o `Comprar`, parsea día/mes/hora y valida si el día matchea `TARGET_DAY_REGEX`.
 
 Ignora cards que tengan `Agotado`.
 
@@ -71,7 +77,8 @@ Responsabilidades permitidas:
 
 - llevar la pestaña al frente
 - ubicar la card/fila detectada
-- clickear un botón configurado como `Comprar`, `Seleccionar`, `Continuar` o equivalente
+- buscar primero `PURCHASE_BUTTON_TEXT` y luego `PURCHASE_FALLBACK_BUTTON_TEXT`
+- clickear el botón dentro de la misma card/fila detectada
 - usar fallback entre `PURCHASE_BUTTON_TEXT` y `PURCHASE_FALLBACK_BUTTON_TEXT`
 - guardar estado para no repetir clicks infinitamente
 - detenerse ante captcha, pantalla de pago o confirmación irreversible
