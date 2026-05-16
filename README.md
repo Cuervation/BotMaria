@@ -155,10 +155,10 @@ PLAYWRIGHT_HEADLESS=true
 
 Por defecto viene en `false` para que puedas ver el navegador.
 
-Si querés que se abra visible pero se minimice solo en Windows:
+Si querés que se abra fuera de pantalla y luego se recentre cuando detecta una fecha:
 
 ```env
-PLAYWRIGHT_MINIMIZE_ON_START=true
+PLAYWRIGHT_OFFSCREEN=true
 ```
 
 Por defecto también viene en `false`.

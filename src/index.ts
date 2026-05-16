@@ -1,11 +1,8 @@
 import { chromium } from "playwright";
-import { spawn } from "node:child_process";
-import path from "node:path";
 import { config } from "./config.js";
 import { MonitorAgent } from "./agents/monitorAgent.js";
 import { log, warn } from "./utils/logger.js";
 import { printStartupAscii } from "./utils/startupAscii.js";
-import { sleep } from "./utils/sleep.js";
 
 async function main(): Promise<void> {
   printStartupAscii();
@@ -19,28 +16,11 @@ async function main(): Promise<void> {
     args: [
       "--autoplay-policy=no-user-gesture-required",
       "--disable-features=PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies",
+      ...(config.playwrightOffscreen ? ["--window-position=-32000,-32000", "--window-size=1280,720"] : []),
     ],
   });
 
   await (context.pages()[0] ?? context.newPage());
-
-  if (config.playwrightMinimizeOnStart && !config.playwrightHeadless) {
-    const scriptPath = path.resolve("scripts/minimize-browser.ps1");
-    log("Minimizando ventana de Chrome en Windows...");
-
-    await sleep(1500);
-
-    spawn("powershell.exe", [
-      "-ExecutionPolicy",
-      "Bypass",
-      "-File",
-      scriptPath,
-    ], {
-      stdio: "ignore",
-      detached: true,
-      windowsHide: true,
-    }).unref();
-  }
 
   let shuttingDown = false;
 

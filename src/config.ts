@@ -34,7 +34,7 @@ const envSchema = z.object({
 
   PLAYWRIGHT_USER_DATA_DIR: z.string().default(".playwright-profile"),
   PLAYWRIGHT_HEADLESS: boolFromEnv(false),
-  PLAYWRIGHT_MINIMIZE_ON_START: boolFromEnv(false),
+  PLAYWRIGHT_OFFSCREEN: boolFromEnv(false),
   STATE_DIR: z.string().default("state"),
 
   LOGIN_ENABLED: boolFromEnv(true),
@@ -91,7 +91,7 @@ export const config = {
 
   playwrightUserDataDir: path.resolve(parsed.PLAYWRIGHT_USER_DATA_DIR),
   playwrightHeadless: parsed.PLAYWRIGHT_HEADLESS,
-  playwrightMinimizeOnStart: parsed.PLAYWRIGHT_MINIMIZE_ON_START,
+  playwrightOffscreen: parsed.PLAYWRIGHT_OFFSCREEN,
   stateDir: path.resolve(parsed.STATE_DIR),
 
   loginEnabled: parsed.LOGIN_ENABLED,

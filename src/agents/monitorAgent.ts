@@ -7,6 +7,7 @@ import { EntryToDatesAgent } from "./entryToDatesAgent.js";
 import { LoginAgent } from "./loginAgent.js";
 import { AlarmAgent } from "./alarmAgent.js";
 import { PurchaseAssistAgent } from "./purchaseAssistAgent.js";
+import { WindowPlacementAgent } from "../utils/windowPlacement.js";
 import { log, warn } from "../utils/logger.js";
 import { sleep } from "../utils/sleep.js";
 
@@ -16,6 +17,7 @@ export class MonitorAgent {
   private readonly entryToDatesAgent: EntryToDatesAgent;
   private readonly alarmAgent: AlarmAgent;
   private readonly purchaseAssistAgent: PurchaseAssistAgent;
+  private readonly windowPlacementAgent: WindowPlacementAgent;
 
   constructor(
     private readonly context: BrowserContext,
@@ -29,6 +31,7 @@ export class MonitorAgent {
     this.entryToDatesAgent = new EntryToDatesAgent(appConfig);
     this.alarmAgent = new AlarmAgent(context, appConfig);
     this.purchaseAssistAgent = new PurchaseAssistAgent(appConfig);
+    this.windowPlacementAgent = new WindowPlacementAgent(appConfig);
   }
 
   async run(): Promise<void> {
@@ -95,6 +98,7 @@ export class MonitorAgent {
 
       log(`Fecha válida detectada: ${result.rawText}`);
       await this.alarmAgent.fire(result);
+      await this.windowPlacementAgent.centerBrowserWindow();
       await page.bringToFront().catch(() => undefined);
 
       const assistResult = await this.purchaseAssistAgent.assist(page, result);
