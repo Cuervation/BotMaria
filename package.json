@@ -1,25 +1,29 @@
 {
-  "name": "movistar-arena-watchdog",
-  "version": "0.1.0",
+  "name": "bot-maria",
+  "version": "1.0.0",
   "private": true,
-  "description": "Deterministic Playwright watchdog for Movistar Arena dates.",
-  "type": "commonjs",
+  "description": "Bot local de monitoreo para fechas de María Becerra en Movistar Arena. Alerta con YouTube, no compra entradas.",
+  "type": "module",
   "scripts": {
-    "dev": "ts-node --transpile-only src/index.ts",
-    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "monitor": "tsx src/index.ts",
+    "build": "tsc",
     "start": "node dist/index.js",
-    "monitor": "ts-node --transpile-only src/index.ts",
-    "test": "node --test",
-    "list-audio-devices": "powershell.exe -ExecutionPolicy Bypass -File scripts/set-speakers.ps1 -ListAudioDevices"
+    "test": "tsx --test tests/*.test.ts",
+    "list-audio-devices": "powershell.exe -ExecutionPolicy Bypass -File scripts/list-audio-devices.ps1",
+    "set-speakers": "powershell.exe -ExecutionPolicy Bypass -File scripts/set-speakers.ps1"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
-    "playwright": "^1.54.2",
-    "zod": "^3.25.76"
+    "playwright": "^1.49.1",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@types/node": "^22.15.21",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

@@ -1,41 +1,26 @@
-export type LogLevel = 'info' | 'warn' | 'error' | 'debug';
-
-export interface Logger {
-  info(message: string, meta?: Record<string, unknown>): void;
-  warn(message: string, meta?: Record<string, unknown>): void;
-  error(message: string, meta?: Record<string, unknown>): void;
-  debug(message: string, meta?: Record<string, unknown>): void;
-}
-
-function formatMeta(meta?: Record<string, unknown>): string {
-  if (!meta || Object.keys(meta).length === 0) {
-    return '';
-  }
-
-  return ` ${JSON.stringify(meta)}`;
-}
-
-function write(level: LogLevel, message: string, meta?: Record<string, unknown>): void {
-  const line = `${new Date().toISOString()} [${level.toUpperCase()}] ${message}${formatMeta(meta)}`;
-  if (level === 'error') {
-    console.error(line);
+export function log(message: string, meta?: unknown): void {
+  const timestamp = new Date().toISOString();
+  if (meta === undefined) {
+    console.log(`[${timestamp}] ${message}`);
     return;
   }
+  console.log(`[${timestamp}] ${message}`, meta);
+}
 
-  if (level === 'warn') {
-    console.warn(line);
+export function warn(message: string, meta?: unknown): void {
+  const timestamp = new Date().toISOString();
+  if (meta === undefined) {
+    console.warn(`[${timestamp}] WARN: ${message}`);
     return;
   }
-
-  console.log(line);
+  console.warn(`[${timestamp}] WARN: ${message}`, meta);
 }
 
-export function createLogger(): Logger {
-  return {
-    info: (message, meta) => write('info', message, meta),
-    warn: (message, meta) => write('warn', message, meta),
-    error: (message, meta) => write('error', message, meta),
-    debug: (message, meta) => write('debug', message, meta),
-  };
+export function error(message: string, meta?: unknown): void {
+  const timestamp = new Date().toISOString();
+  if (meta === undefined) {
+    console.error(`[${timestamp}] ERROR: ${message}`);
+    return;
+  }
+  console.error(`[${timestamp}] ERROR: ${message}`, meta);
 }
-

@@ -1,69 +1,57 @@
-import { existsSync } from 'node:fs';
-import path from 'node:path';
-import { spawn } from 'node:child_process';
-import { AppConfig } from '../config';
-import { Logger } from '../utils/logger';
+import { execFile } from "node:child_process";
+import type { AppConfig } from "../config.js";
+import { log, warn } from "../utils/logger.js";
 
 export class SpeakerAgent {
-  constructor(
-    private readonly config: AppConfig,
-    private readonly logger: Logger,
-  ) {}
+  constructor(private readonly appConfig: AppConfig) {}
 
-  async configure(): Promise<void> {
-    await this.forceSpeakersIfEnabled();
+  async forceSpeakersIfEnabled(): Promise<void> {
+    if (!this.appConfig.forceSpeakers) {
+      log("FORCE_SPEAKERS=false. No intento cambiar salida de audio.");
+      return;
+    }
+
+    log("Intentando cambiar salida de audio a parlantes...");
+
+    try {
+      await this.runPowerShellScript();
+      log("Salida de audio forzada correctamente.");
+    } catch (err) {
+      warn("No se pudo forzar salida por parlantes. Windows puede seguir usando auriculares si son la salida predeterminada.", err);
+    }
   }
 
-  async forceSpeakersIfEnabled(): Promise<boolean> {
-    if (!this.config.forceSpeakers) {
-      this.logger.info('SpeakerAgent disabled by configuration.');
-      return true;
-    }
-
-    const scriptPath = path.resolve(process.cwd(), this.config.speakerScriptPath);
-    if (!existsSync(scriptPath)) {
-      this.logger.warn('Speaker script not found; skipping audio setup.', { scriptPath });
-      return false;
-    }
-
-    this.logger.info('SpeakerAgent invoking PowerShell setup script.', { scriptPath });
-
-    return await new Promise<boolean>((resolve) => {
-      const child = spawn('powershell.exe', [
-        '-ExecutionPolicy',
-        'Bypass',
-        '-File',
-        scriptPath,
-      ], {
-        stdio: ['ignore', 'pipe', 'pipe'],
-        env: {
-          ...process.env,
-          SPEAKER_DEVICE_NAME: this.config.speakerDeviceName,
+  private runPowerShellScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      execFile(
+        "powershell.exe",
+        [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          this.appConfig.speakerScriptPath,
+        ],
+        {
+          env: {
+            ...process.env,
+            SPEAKER_DEVICE_NAME: this.appConfig.speakerDeviceName,
+            FORCE_SYSTEM_VOLUME: String(this.appConfig.forceSystemVolume),
+          },
+          windowsHide: true,
         },
-      });
+        (error, stdout, stderr) => {
+          if (stdout.trim()) log(stdout.trim());
+          if (stderr.trim()) warn(stderr.trim());
 
-      child.stdout.on('data', (chunk) => {
-        this.logger.info(String(chunk).trim());
-      });
+          if (error) {
+            reject(error);
+            return;
+          }
 
-      child.stderr.on('data', (chunk) => {
-        this.logger.warn(String(chunk).trim());
-      });
-
-      child.on('close', (code) => {
-        if (code === 0) {
-          this.logger.info('Salida de audio forzada correctamente.');
-          resolve(true);
-        } else {
-          this.logger.warn('No se pudo forzar salida por parlantes. Windows puede seguir usando auriculares si son la salida predeterminada.', { code });
-          resolve(false);
-        }
-      });
-
-      child.on('error', (error) => {
-        this.logger.warn('No se pudo forzar salida por parlantes. Windows puede seguir usando auriculares si son la salida predeterminada.', { error: String(error) });
-        resolve(false);
-      });
+          resolve();
+        },
+      );
     });
   }
 }

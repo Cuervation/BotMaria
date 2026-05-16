@@ -1,0 +1,35 @@
+
+> bot-maria@1.0.0 dev
+> tsx src/index.ts
+
+[2026-05-16T19:39:29.781Z] Iniciando BotMaria...
+[2026-05-16T19:39:29.787Z] CHECK_INTERVAL_MS=30000
+[2026-05-16T19:39:29.790Z] TARGET_DAY_REGEX=^2\d$
+[2026-05-16T19:39:29.794Z] LOGIN_ENABLED=true
+[2026-05-16T19:39:34.405Z] Abriendo MONITOR_URL: https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83
+[2026-05-16T19:39:35.023Z] MonitorAgent iniciado.
+[2026-05-16T19:39:35.038Z] Buscando botón de login: "Iniciar sesión"
+[2026-05-16T19:39:35.504Z] No veo botón de Iniciar sesión. Puede que todavía no estés en Movistar Arena o que ya estés logueado.
+[2026-05-16T19:39:35.535Z] Todavía no parece estar la pantalla de fechas. Sigo monitoreando la página activa...
+[2026-05-16T19:40:05.552Z] Buscando botón de login: "Iniciar sesión"
+[2026-05-16T19:40:05.663Z] Click en "Iniciar sesión" realizado.
+[2026-05-16T19:40:08.666Z] Buscando botón de ingreso: "Ingresar"
+[2026-05-16T19:40:09.103Z] Click en "Ingresar" realizado. Esperando post-login...
+[2026-05-16T19:40:14.155Z] Buscando fechas disponibles...
+[2026-05-16T19:40:14.172Z] No encontré botones/textos Seleccionar.
+[2026-05-16T19:40:14.173Z] Todavía no apareció fecha veintipico disponible. reason=no_select_buttons
+[2026-05-16T19:40:44.194Z] Buscando fechas disponibles...
+[2026-05-16T19:40:44.213Z] No encontré botones/textos Seleccionar.
+[2026-05-16T19:40:44.214Z] Todavía no apareció fecha veintipico disponible. reason=no_select_buttons
+[2026-05-16T19:41:14.238Z] Buscando fechas disponibles...
+[2026-05-16T19:41:14.254Z] No encontré botones/textos Seleccionar.
+[2026-05-16T19:41:14.254Z] Todavía no apareció fecha veintipico disponible. reason=no_select_buttons
+[2026-05-16T19:41:44.266Z] Buscando fechas disponibles...
+[2026-05-16T19:41:44.291Z] No encontré botones/textos Seleccionar.
+[2026-05-16T19:41:44.291Z] Todavía no apareció fecha veintipico disponible. reason=no_select_buttons
+[2026-05-16T19:42:14.304Z] Buscando fechas disponibles...
+[2026-05-16T19:42:14.322Z] No encontré botones/textos Seleccionar.
+[2026-05-16T19:42:14.323Z] Todavía no apareció fecha veintipico disponible. reason=no_select_buttons
+[2026-05-16T19:42:44.349Z] Buscando fechas disponibles...
+[2026-05-16T19:42:44.364Z] No encontré botones/textos Seleccionar.
+[2026-05-16T19:42:44.364Z] Todavía no apareció fecha veintipico disponible. reason=no_select_buttons

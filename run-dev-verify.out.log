@@ -1,0 +1,117 @@
+
+> movistar-arena-watchdog@0.1.0 dev
+> ts-node --transpile-only src/index.ts
+
+2026-05-16T18:52:48.329Z [INFO] Starting movistar-arena-watchdog. {"monitorUrl":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83","targetArtist":"María Becerra","targetDayRegex":"^2\\d$","checkIntervalMs":30000}
+2026-05-16T18:52:59.557Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T18:53:03.228Z [INFO] Buscando fechas disponibles... {"targetArtist":"María Becerra"}
+2026-05-16T18:53:03.380Z [INFO] No hay fechas veintipico disponibles todavia
+2026-05-16T18:53:03.381Z [INFO] No matching date found. {"reason":"no_matching_available_date"}
+2026-05-16T18:53:33.391Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T18:53:35.217Z [INFO] Buscando fechas disponibles... {"targetArtist":"María Becerra"}
+2026-05-16T18:53:35.341Z [INFO] No hay fechas veintipico disponibles todavia
+2026-05-16T18:53:35.343Z [INFO] No matching date found. {"reason":"no_matching_available_date"}
+2026-05-16T18:54:05.347Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T18:54:07.380Z [INFO] Buscando fechas disponibles... {"targetArtist":"María Becerra"}
+2026-05-16T18:54:07.583Z [INFO] No hay fechas veintipico disponibles todavia
+2026-05-16T18:54:07.583Z [INFO] No matching date found. {"reason":"no_matching_available_date"}
+2026-05-16T18:54:37.586Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T18:54:39.623Z [INFO] Buscando fechas disponibles... {"targetArtist":"María Becerra"}
+2026-05-16T18:54:39.852Z [INFO] No hay fechas veintipico disponibles todavia
+2026-05-16T18:54:39.854Z [INFO] No matching date found. {"reason":"no_matching_available_date"}
+2026-05-16T18:55:09.860Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T18:55:39.883Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T18:56:09.892Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T18:56:39.908Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T18:57:09.917Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T18:57:39.931Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T18:58:09.941Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T18:58:39.945Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T18:59:09.963Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T18:59:39.977Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:00:09.991Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:00:40.010Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:01:10.026Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:01:40.035Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:02:10.040Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:02:40.051Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:03:10.064Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:03:40.070Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:04:10.075Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:04:40.083Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:05:10.100Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:05:40.118Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:06:10.135Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:06:40.153Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:07:10.171Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:07:40.191Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:08:10.194Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:08:40.212Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:09:10.228Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:09:40.244Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:10:10.248Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:10:40.257Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:11:10.265Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:11:40.283Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:12:10.300Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:12:40.329Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:13:10.349Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:13:40.360Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:14:10.371Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:14:40.393Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:15:10.402Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:15:40.428Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:16:10.447Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:16:40.475Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:17:10.497Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:17:40.519Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:18:10.533Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:18:40.546Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:19:10.565Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:19:40.584Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:20:10.610Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:20:40.634Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:21:10.649Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:21:40.676Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:22:10.702Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:22:40.716Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:23:10.736Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:23:40.756Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:24:10.775Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:24:40.800Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:25:10.817Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:25:40.843Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:26:10.872Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:26:40.892Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:27:10.907Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:27:40.911Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:28:10.916Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:28:40.922Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:29:10.949Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:29:40.958Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:30:10.966Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:30:40.976Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:31:10.984Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:31:40.999Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:32:11.008Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:32:41.033Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:33:11.056Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:33:41.083Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:34:11.099Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:34:41.122Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:35:11.136Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:35:41.152Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:36:11.164Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:36:41.179Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:37:11.201Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:37:41.212Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:38:11.228Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:38:41.231Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:39:11.256Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:39:41.267Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:40:11.277Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:40:41.289Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:41:11.305Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:41:41.318Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:42:11.339Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}
+2026-05-16T19:42:41.368Z [INFO] MonitorAgent navigating to target page. {"url":"https://www.movistararena.com.ar/show/993a2d46-39d7-4455-b199-87a5a2dc9b83"}

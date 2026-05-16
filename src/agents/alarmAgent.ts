@@ -1,223 +1,146 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import path from 'node:path';
-import { BrowserContext, Page } from 'playwright';
-import { Logger } from '../utils/logger';
-import { SpeakerAgent } from './speakerAgent';
+import path from "node:path";
+import type { BrowserContext, Page } from "playwright";
+import type { AppConfig } from "../config.js";
+import type { DateDetectionResult } from "./dateDetectorAgent.js";
+import { SpeakerAgent } from "./speakerAgent.js";
+import { log, warn } from "../utils/logger.js";
+import { readJsonFile, writeJsonFile } from "../utils/fsState.js";
+import { sleep } from "../utils/sleep.js";
 
-export interface MatchedDate {
-  day: string;
-  month: string;
-  time: string;
-  rawText: string;
-}
-
-export interface AlarmState {
+type AlarmState = {
   firedAt: string;
   reason: string;
-  matchedDate: MatchedDate;
-}
+  matchedDate: {
+    day: string;
+    month: string | null;
+    time: string | null;
+    rawText: string;
+  };
+};
 
-export interface AlarmFireResult {
-  fired: boolean;
-  skipped: boolean;
-  reason: string;
+function withAutoplay(url: string): string {
+  const parsed = new URL(url);
+  parsed.searchParams.set("autoplay", "1");
+  return parsed.toString();
 }
 
 export class AlarmAgent {
-  constructor(
-    private readonly context: BrowserContext,
-    private readonly alarmUrl: string,
-    private readonly speakerAgent: SpeakerAgent,
-    private readonly stateDir: string,
-    private readonly cooldownMinutes: number,
-    private readonly logger: Logger,
-  ) {}
+  private readonly speakerAgent: SpeakerAgent;
+  private readonly stateFile: string;
 
-  async fire(reason: string, matchedDate: MatchedDate): Promise<AlarmFireResult> {
-    const currentState = await this.readState();
-    if (this.isInCooldown(currentState)) {
-      this.logger.info('Alarm already fired recently, skipping duplicate alarm.');
-      return { fired: false, skipped: true, reason: 'cooldown_active' };
+  constructor(private readonly context: BrowserContext, private readonly appConfig: AppConfig) {
+    this.speakerAgent = new SpeakerAgent(appConfig);
+    this.stateFile = path.join(appConfig.stateDir, "alarm-fired.json");
+  }
+
+  async fire(match: Extract<DateDetectionResult, { found: true }>): Promise<void> {
+    const recentState = await this.getRecentAlarmState();
+
+    if (recentState) {
+      log("Alarm already fired recently, skipping duplicate alarm.", recentState);
+      return;
     }
 
-    this.logger.info('Intentando configurar parlantes...');
-    const speakersReady = await this.speakerAgent.forceSpeakersIfEnabled();
-    if (!speakersReady) {
-      this.logger.warn('No se pudo forzar salida por parlantes. Windows puede seguir usando auriculares si son la salida predeterminada.');
-    }
+    log(`Alarm fired because date matched: ${match.rawText}`);
+
+    await this.speakerAgent.forceSpeakersIfEnabled();
 
     const page = await this.context.newPage();
-    try {
-      await page.goto(this.alarmUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-      await page.bringToFront().catch(() => undefined);
-      this.logger.info('YouTube alarm opened', { url: this.alarmUrl });
+    await page.bringToFront();
 
-      await this.waitForYouTubeReady(page);
-      await this.writeState({
-        firedAt: new Date().toISOString(),
-        reason,
-        matchedDate,
-      });
-      await this.dismissCommonDialogs(page);
-      await this.maximizeYouTubePlayerVolume(page);
-      await this.tryAutoplayWithRetries(page);
+    const alarmUrl = withAutoplay(this.appConfig.alarmYoutubeUrl);
+    await page.goto(alarmUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
 
-      this.logger.warn(`Alarm fired because date matched: ${matchedDate.day} ${matchedDate.month} ${matchedDate.time}`, {
-        reason,
-        matchedDate,
-      });
+    log("YouTube alarm opened.");
 
-      return { fired: true, skipped: false, reason: 'alarm_fired' };
-    } catch (error) {
-      this.logger.warn('No se pudo reproducir la alarma en YouTube.', { error: String(error) });
-      return { fired: false, skipped: false, reason: 'alarm_failed' };
+    await this.handleCommonDialogs(page);
+    await this.tryStartVideo(page);
+
+    const state: AlarmState = {
+      firedAt: new Date().toISOString(),
+      reason: match.reason,
+      matchedDate: {
+        day: match.day,
+        month: match.month,
+        time: match.time,
+        rawText: match.rawText,
+      },
+    };
+
+    await writeJsonFile(this.stateFile, state);
+  }
+
+  private async getRecentAlarmState(): Promise<AlarmState | null> {
+    const state = await readJsonFile<AlarmState>(this.stateFile);
+    if (!state) return null;
+
+    const firedAtMs = new Date(state.firedAt).getTime();
+    if (Number.isNaN(firedAtMs)) return null;
+
+    const elapsedMinutes = (Date.now() - firedAtMs) / 60000;
+    if (elapsedMinutes <= this.appConfig.alarmCooldownMinutes) {
+      return state;
     }
+
+    return null;
   }
 
-  private async waitForYouTubeReady(page: Page): Promise<void> {
-    await page.waitForLoadState('domcontentloaded', { timeout: 60_000 }).catch(() => undefined);
-    await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => undefined);
-    await page.waitForSelector('video', { timeout: 20_000 }).catch(() => undefined);
-  }
-
-  private async dismissCommonDialogs(page: Page): Promise<void> {
-    const buttonNames = [
+  private async handleCommonDialogs(page: Page): Promise<void> {
+    const labels = [
       /Aceptar todo/i,
       /Acepto/i,
-      /Acept[ao]r/i,
       /Aceptar/i,
-      /Estoy de acuerdo/i,
       /I agree/i,
       /Accept all/i,
-      /Accept/i,
-      /Got it/i,
-      /Entendido/i,
-      /Cerrar/i,
-      /Close/i,
-      /No gracias/i,
-      /Reject all/i,
+      /No thanks/i,
+      /Ahora no/i,
+      /Omitir/i,
     ];
 
-    for (const name of buttonNames) {
-      const button = page.getByRole('button', { name });
-      if (await button.count().catch(() => 0)) {
-        await button.first().click({ timeout: 2_500 }).catch(() => undefined);
-      }
+    for (const label of labels) {
+      const button = page.getByRole("button", { name: label }).first();
+      const visible = await button.isVisible({ timeout: 1200 }).catch(() => false);
+      if (!visible) continue;
+
+      await button.click({ timeout: 3000 }).catch(() => undefined);
+      await sleep(700);
     }
   }
 
-  private async maximizeYouTubePlayerVolume(page: Page): Promise<void> {
-    const adjusted = await page.evaluate(() => {
-      const video = document.querySelector('video') as HTMLVideoElement | null;
-      if (video) {
-        video.muted = false;
-        video.volume = 1;
-        void video.play().catch(() => undefined);
-        return true;
-      }
-
-      return false;
-    });
-
-    if (adjusted) {
-      this.logger.info('Video unmuted');
-      this.logger.info('Video volume set to 100%');
-    }
-  }
-
-  private async tryAutoplayWithRetries(page: Page): Promise<void> {
+  private async tryStartVideo(page: Page): Promise<void> {
     for (let attempt = 1; attempt <= 3; attempt += 1) {
-      this.logger.info('Video play attempted', { attempt });
+      log(`Intento de reproducción de YouTube ${attempt}/3`);
 
-      const played = await page.evaluate(async () => {
-        const video = document.querySelector('video') as HTMLVideoElement | null;
-        if (!video) {
-          return false;
-        }
+      await page.evaluate(async () => {
+        const video = document.querySelector("video") as HTMLVideoElement | null;
+        if (!video) return;
 
         video.muted = false;
         video.volume = 1;
 
         try {
           await video.play();
-          return true;
         } catch {
-          return false;
+          // Se reintenta con interacción desde Node.
         }
       });
 
-      if (played) {
-        return;
-      }
+      log("Video unmuted");
+      log("Video volume set to 100%");
+      log("Video play attempted");
 
-      await this.tryFallbackPlaybackControls(page);
-    }
-  }
+      const isPlaying = await page.evaluate(() => {
+        const video = document.querySelector("video") as HTMLVideoElement | null;
+        return Boolean(video && !video.paused && video.currentTime >= 0);
+      }).catch(() => false);
 
-  private async tryFallbackPlaybackControls(page: Page): Promise<void> {
-    const playButtons = [
-      page.getByRole('button', { name: /Play|Reproducir|Play video|Play\/pause/i }),
-      page.locator('button[aria-label*="Play" i]'),
-      page.locator('button[aria-label*="Reproducir" i]'),
-      page.locator('.ytp-play-button'),
-    ];
+      if (isPlaying) return;
 
-    for (const locator of playButtons) {
-      const count = await locator.count().catch(() => 0);
-      if (count > 0) {
-        await locator.first().click({ timeout: 2_500 }).catch(() => undefined);
-        break;
-      }
+      await page.getByRole("button", { name: /Play|Reproducir/i }).first().click({ timeout: 3000 }).catch(() => undefined);
+      await page.keyboard.press("Space").catch(() => undefined);
+      await sleep(1500);
     }
 
-    await page.keyboard.press('Space').catch(() => undefined);
-    await page.evaluate(async () => {
-      const video = document.querySelector('video') as HTMLVideoElement | null;
-      if (!video) {
-        return;
-      }
-
-      video.muted = false;
-      video.volume = 1;
-      await video.play().catch(() => undefined);
-    });
-  }
-
-  private async readState(): Promise<AlarmState | null> {
-    const stateFilePath = this.getStateFilePath();
-    if (!existsSync(stateFilePath)) {
-      return null;
-    }
-
-    try {
-      const raw = await readFile(stateFilePath, 'utf8');
-      return JSON.parse(raw) as AlarmState;
-    } catch {
-      return null;
-    }
-  }
-
-  private async writeState(state: AlarmState): Promise<void> {
-    const stateDirPath = path.resolve(process.cwd(), this.stateDir);
-    await mkdir(stateDirPath, { recursive: true });
-    await writeFile(this.getStateFilePath(), `${JSON.stringify(state, null, 2)}\n`, 'utf8');
-  }
-
-  private getStateFilePath(): string {
-    return path.join(path.resolve(process.cwd(), this.stateDir), 'alarm-fired.json');
-  }
-
-  private isInCooldown(state: AlarmState | null): boolean {
-    if (!state?.firedAt) {
-      return false;
-    }
-
-    const firedAt = new Date(state.firedAt).getTime();
-    if (Number.isNaN(firedAt)) {
-      return false;
-    }
-
-    return Date.now() - firedAt < this.cooldownMinutes * 60_000;
+    warn("No pude confirmar reproducción automática. La pestaña de YouTube quedó abierta.");
   }
 }

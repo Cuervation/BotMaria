@@ -1,108 +1,52 @@
-import path from 'node:path';
-import { mkdir } from 'node:fs/promises';
-import { chromium, BrowserContext } from 'playwright';
-import { loadConfig } from './config';
-import { DateDetectorAgent } from './agents/dateDetectorAgent';
-import { MonitorAgent } from './agents/monitorAgent';
-import { AlarmAgent } from './agents/alarmAgent';
-import { SpeakerAgent } from './agents/speakerAgent';
-import { createLogger } from './utils/logger';
-import { sleep } from './utils/sleep';
-
-async function ensureDirectory(dirPath: string): Promise<void> {
-  await mkdir(dirPath, { recursive: true });
-}
-
-function resolvePath(inputPath: string): string {
-  return path.isAbsolute(inputPath) ? inputPath : path.resolve(process.cwd(), inputPath);
-}
-
-async function launchPersistentContext(userDataDir: string): Promise<BrowserContext> {
-  const resolvedUserDataDir = resolvePath(userDataDir);
-  await ensureDirectory(path.dirname(resolvedUserDataDir));
-
-  try {
-    return await chromium.launchPersistentContext(resolvedUserDataDir, {
-      headless: false,
-      channel: 'chrome',
-    });
-  } catch {
-    return chromium.launchPersistentContext(resolvedUserDataDir, {
-      headless: false,
-    });
-  }
-}
+import { chromium } from "playwright";
+import { config } from "./config.js";
+import { MonitorAgent } from "./agents/monitorAgent.js";
+import { log, warn } from "./utils/logger.js";
 
 async function main(): Promise<void> {
-  const logger = createLogger();
-  const config = loadConfig();
+  log("Iniciando BotMaria...");
+  log(`CHECK_INTERVAL_MS=${config.checkIntervalMs}`);
+  log(`TARGET_DAY_REGEX=${config.targetDayRegex}`);
+  log(`LOGIN_ENABLED=${config.loginEnabled}`);
 
-  logger.info('Starting movistar-arena-watchdog.', {
-    monitorUrl: config.monitorUrl,
-    targetArtist: config.targetArtist,
-    targetDayRegex: config.targetDayRegex.source,
-    checkIntervalMs: config.checkIntervalMs,
+  const context = await chromium.launchPersistentContext(config.playwrightUserDataDir, {
+    headless: false,
+    args: [
+      "--autoplay-policy=no-user-gesture-required",
+      "--disable-features=PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies",
+    ],
   });
 
-  await ensureDirectory(resolvePath(config.stateDir));
-  await ensureDirectory(resolvePath(config.playwrightUserDataDir));
+  let shuttingDown = false;
 
-  const speakerAgent = new SpeakerAgent(config, logger);
+  async function shutdown(): Promise<void> {
+    if (shuttingDown) return;
+    shuttingDown = true;
 
-  const context = await launchPersistentContext(config.playwrightUserDataDir);
-  const page = context.pages()[0] ?? (await context.newPage());
-  const monitorAgent = new MonitorAgent(page, config.monitorUrl, logger);
-  const detectorAgent = new DateDetectorAgent(config.targetArtist, config.targetDayRegex, logger);
-  const alarmAgent = new AlarmAgent(
-    context,
-    config.alarmYoutubeUrl,
-    speakerAgent,
-    config.stateDir,
-    config.alarmCooldownMinutes,
-    logger,
-  );
-
-  const shutdown = async () => {
-    logger.info('Shutting down browser context.');
-    await context.close().catch(() => undefined);
+    log("Cerrando navegador...");
+    await context.close().catch((err) => warn("No pude cerrar contexto limpiamente.", err));
     process.exit(0);
-  };
-
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
-
-  while (true) {
-    try {
-      await monitorAgent.capture();
-      const detection = await detectorAgent.inspect(page);
-
-      if (detection.found) {
-        logger.warn('Matching date detected.', {
-          day: detection.day,
-          month: detection.month,
-          time: detection.time,
-          reason: detection.reason,
-        });
-
-        await alarmAgent.fire(detection.reason, {
-          day: detection.day ?? '',
-          month: detection.month ?? '',
-          time: detection.time ?? '',
-          rawText: detection.rawText ?? '',
-        });
-      } else {
-        logger.info('No matching date found.', { reason: detection.reason });
-      }
-    } catch (error) {
-      logger.error('Monitor loop error.', { error: String(error) });
-    }
-
-    await sleep(config.checkIntervalMs);
   }
+
+  process.on("SIGINT", () => void shutdown());
+  process.on("SIGTERM", () => void shutdown());
+
+  const page = context.pages()[0] ?? await context.newPage();
+
+  if (config.monitorUrl) {
+    log(`Abriendo MONITOR_URL: ${config.monitorUrl}`);
+    await page.goto(config.monitorUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
+  } else {
+    log("MONITOR_URL está vacío.");
+    log("Navegá manualmente hasta la pantalla de fechas de María Becerra. El bot va a monitorear la página activa.");
+    await page.goto("about:blank");
+  }
+
+  const monitorAgent = new MonitorAgent(context, config);
+  await monitorAgent.run();
 }
 
-main().catch((error) => {
-  const logger = createLogger();
-  logger.error('Fatal startup error.', { error: String(error) });
+main().catch((err) => {
+  console.error(err);
   process.exit(1);
 });

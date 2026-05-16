@@ -1,98 +1,49 @@
-param(
-  [switch]$ListAudioDevices
-)
+$ErrorActionPreference = "Stop"
 
-$ErrorActionPreference = 'Stop'
-
-function Write-Log {
-  param([string]$Message)
-  Write-Host $Message
+$deviceName = $env:SPEAKER_DEVICE_NAME
+if ([string]::IsNullOrWhiteSpace($deviceName)) {
+  $deviceName = "Altavoces"
 }
 
-function Write-ErrorAndExit {
-  param(
-    [string]$Message,
-    [int]$ExitCode = 1
-  )
-
-  Write-Host $Message
-  exit $ExitCode
+$forceVolume = $env:FORCE_SYSTEM_VOLUME
+if ([string]::IsNullOrWhiteSpace($forceVolume)) {
+  $forceVolume = "true"
 }
 
-function Get-SpeakerDeviceName {
-  $name = $env:SPEAKER_DEVICE_NAME
-  if ([string]::IsNullOrWhiteSpace($name)) {
-    return 'Altavoces'
-  }
-
-  return $name.Trim()
-}
-
-function Ensure-AudioDeviceCmdletsInstalled {
-  $module = Get-Module -ListAvailable -Name AudioDeviceCmdlets | Select-Object -First 1
-  if (-not $module) {
-    Write-ErrorAndExit @'
-El módulo AudioDeviceCmdlets no está instalado.
-Instalalo con:
-Install-Module -Name AudioDeviceCmdlets -Scope CurrentUser
-'@
-  }
-}
-
-function Import-AudioDeviceCmdlets {
-  Import-Module AudioDeviceCmdlets -ErrorAction Stop
-}
-
-function List-AudioDevices {
-  $devices = @(Get-AudioDevice -List)
-  if ($devices.Count -eq 0) {
-    Write-Log 'No se encontraron dispositivos de audio.'
-    return
-  }
-
-  Write-Log 'Dispositivos de audio disponibles:'
-  foreach ($device in $devices) {
-    Write-Log ("{0} - {1}" -f $device.Index, $device.Name)
-  }
-}
-
-function Find-SpeakerDevice {
-  param([string]$SearchName)
-
-  $devices = @(Get-AudioDevice -List)
-  return $devices | Where-Object {
-    $_.Name -and $_.Name.ToString().IndexOf($SearchName, [System.StringComparison]::OrdinalIgnoreCase) -ge 0
-  } | Select-Object -First 1
-}
-
-Ensure-AudioDeviceCmdletsInstalled
-Import-AudioDeviceCmdlets
-
-if ($ListAudioDevices) {
-  List-AudioDevices
-  exit 0
-}
-
-$speakerDeviceName = Get-SpeakerDeviceName
-Write-Log ("Buscando dispositivo de audio que contenga: {0}" -f $speakerDeviceName)
-
-$device = Find-SpeakerDevice -SearchName $speakerDeviceName
-
-if (-not $device) {
-  Write-Log ("No encontré dispositivo de audio que contenga: {0}" -f $speakerDeviceName)
-  List-AudioDevices
+$module = Get-Module -ListAvailable -Name AudioDeviceCmdlets | Select-Object -First 1
+if (-not $module) {
+  Write-Host "El módulo AudioDeviceCmdlets no está instalado."
+  Write-Host "Instalalo con:"
+  Write-Host "Install-Module -Name AudioDeviceCmdlets -Scope CurrentUser"
   exit 1
 }
 
-try {
-  Set-AudioDevice -Index $device.Index
-  Set-AudioDevice -PlaybackMute $false
-  Set-AudioDevice -PlaybackVolume 100
-  Write-Log ("Salida de audio configurada en: {0}" -f $device.Name)
-  Write-Log 'Volumen configurado al 100%'
-  exit 0
-}
-catch {
-  Write-ErrorAndExit ("No se pudo configurar el dispositivo de audio: {0}" -f $_.Exception.Message)
+Import-Module AudioDeviceCmdlets
+
+$allDevices = Get-AudioDevice -List
+$playbackDevices = $allDevices | Where-Object {
+  ($_.Type -eq "Playback") -or ($_.Type -eq $null)
 }
 
+$device = $playbackDevices | Where-Object {
+  $_.Name -like "*$deviceName*"
+} | Select-Object -First 1
+
+if (-not $device) {
+  Write-Host "No encontré dispositivo de audio que contenga: $deviceName"
+  Write-Host ""
+  Write-Host "Dispositivos disponibles:"
+  $allDevices | Select-Object Index, Type, Name | Format-Table -AutoSize | Out-String | Write-Host
+  exit 1
+}
+
+Set-AudioDevice -Index $device.Index
+
+if ($forceVolume.ToLowerInvariant() -eq "true") {
+  Set-AudioDevice -PlaybackMute $false
+  Set-AudioDevice -PlaybackVolume 100
+  Write-Host "Volumen configurado al 100%"
+}
+
+Write-Host "Salida de audio configurada en: $($device.Name)"
+exit 0

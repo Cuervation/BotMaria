@@ -1,14 +1,23 @@
-# movistar-arena-watchdog
+# BotMaria
 
-Monitor de Movistar Arena con Playwright para detectar fechas disponibles de María Becerra y disparar una alarma abriendo un video de YouTube.
+Bot local de monitoreo para fechas de María Becerra en Movistar Arena.
+
+Cuando aparece una fecha disponible cuyo día empieza con `2` —por ejemplo 20, 21, 22, etc.— abre este video de YouTube como alarma:
+
+https://www.youtube.com/watch?v=Terd4qKkb6k
 
 ## Qué hace
 
-- Abre la página configurada con **Playwright visible**.
-- Usa un **perfil persistente** de Chrome/Chromium para conservar cookies y sesión.
-- Revisa si aparece una fecha cuyo día matchee `TARGET_DAY_REGEX` para `TARGET_ARTIST`.
-- Si detecta coincidencia, abre el video de alarma en YouTube.
-- No compra entradas, no hace login, no salta fila y no evade captcha.
+- Abre Chromium visible con Playwright.
+- Puede autenticar con un login liviano:
+  - click en `Iniciar sesión`
+  - click en `Ingresar`
+- No escribe usuario ni contraseña.
+- No compra entradas.
+- No hace click en `Seleccionar`.
+- No saltea fila virtual.
+- No evade captcha.
+- Intenta cambiar audio a parlantes y volumen 100% antes de disparar YouTube.
 
 ## Instalación
 
@@ -17,14 +26,71 @@ npm install
 npx playwright install
 ```
 
-## Configuración
+Copiá `.env.example` a `.env`:
 
-1. Copiá `.env.example` a `.env`
-2. Revisá `MONITOR_URL` y dejalo apuntando al show de María Becerra
-3. Ajustá, si querés, `PLAYWRIGHT_USER_DATA_DIR` y los parámetros de audio
-4. No bajes `CHECK_INTERVAL_MS` de `30000`
+```bash
+copy .env.example .env
+```
 
-## Ejecución
+## Configuración básica
+
+Editá `.env`:
+
+```env
+MONITOR_URL=
+TARGET_ARTIST=María Becerra
+TARGET_DAY_REGEX=^2\d$
+CHECK_INTERVAL_MS=30000
+
+LOGIN_ENABLED=true
+LOGIN_START_TEXT=Iniciar sesión
+LOGIN_SUBMIT_TEXT=Ingresar
+```
+
+Podés dejar `MONITOR_URL` vacío. En ese caso el navegador abre y vos navegás manualmente hasta Movistar Arena. El bot monitorea la página activa.
+
+## Login automático
+
+El bot hace solamente esto:
+
+1. Click en `Iniciar sesión`.
+2. Click en `Ingresar`.
+
+No tipea usuario ni clave. La idea es que user/pass ya estén cargados o guardados por el navegador.
+
+Como usa `PLAYWRIGHT_USER_DATA_DIR=.playwright-profile`, la sesión puede quedar guardada entre ejecuciones.
+
+## Parlantes con PowerShell
+
+Primero instalá el módulo:
+
+```powershell
+Install-Module -Name AudioDeviceCmdlets -Scope CurrentUser
+```
+
+Listá dispositivos:
+
+```bash
+npm run list-audio-devices
+```
+
+Configurá el nombre en `.env`:
+
+```env
+FORCE_SPEAKERS=true
+SPEAKER_DEVICE_NAME=Altavoces
+```
+
+El nombre también puede ser algo como:
+
+```txt
+Speakers
+Realtek Audio
+Monitor
+Altavoces
+```
+
+## Ejecutar
 
 ```bash
 npm run dev
@@ -36,104 +102,30 @@ O:
 npm run monitor
 ```
 
-Compilado:
+## Flujo recomendado
 
-```bash
-npm run build
-npm start
-```
+1. Ejecutá `npm run dev`.
+2. Si `MONITOR_URL` está vacío, navegá manualmente hasta Movistar Arena.
+3. El bot intenta iniciar sesión si ve `Iniciar sesión`.
+4. El bot monitorea la pantalla de fechas.
+5. Si aparece una fecha `20-29` con `Seleccionar`, abre YouTube y dispara alarma.
 
-Tests livianos:
+## Resetear alarma
 
-```bash
-npm test
-```
+El bot evita disparar muchas veces usando:
 
-## Probar el detector sin esperar la página real
-
-El parser puro `parseDateCardText(rawText)` se prueba con `node:test`, así que podés validar la lógica de fechas sin abrir Movistar Arena.
-
-```bash
-npm test
-```
-
-Si querés probarlo manualmente, el texto esperado es algo como:
-
-```text
-20 Noviembre 19:00 hs Puertas 21:00 hs Show Comprar
-23 Noviembre 19:00 hs Puertas 21:00 hs Show Agotado
-```
-
-El primero debe dar match; el segundo no.
-
-## Configurar parlantes
-
-El proyecto incluye `scripts/set-speakers.ps1`, que intenta configurar la salida de audio y el volumen en Windows usando el módulo **AudioDeviceCmdlets**.
-
-### Instalar el módulo
-
-En PowerShell:
-
-```powershell
-Install-Module -Name AudioDeviceCmdlets -Scope CurrentUser
-```
-
-### Listar dispositivos de audio
-
-```bash
-npm run list-audio-devices
-```
-
-Variables relevantes:
-
-- `FORCE_SPEAKERS=true`
-- `SPEAKER_DEVICE_NAME=Altavoces`
-- `FORCE_SYSTEM_VOLUME=true`
-- `SPEAKER_SCRIPT_PATH=scripts/set-speakers.ps1`
-
-Ejemplo:
-
-```env
-SPEAKER_DEVICE_NAME=Altavoces
-```
-
-El valor puede coincidir con nombres como:
-
-- `Altavoces`
-- `Speakers`
-- `Realtek Audio`
-- `Monitor`
-- `Headphones`
-
-Si el módulo no está instalado, el script avisa con un mensaje claro y sale con código 1.
-
-## Página objetivo
-
-El monitor apunta al show de María Becerra en Movistar Arena. En esa página, la disponibilidad visible hoy usa el CTA `Comprar` para las fechas abiertas y `Agotado` para las cerradas. El bot **solo mira**; no hace click en comprar.
-
-### Fallback opcional
-
-Como alternativa documentada, también podés usar `SoundVolumeView.exe` de NirSoft para ajustar audio manualmente. No está implementado como requisito obligatorio en el bot; queda como fallback opcional si querés extenderlo después.
-
-## Alarma y cooldown
-
-Cuando se dispara la alarma, se guarda:
-
-```json
-{
-  "firedAt": "...",
-  "reason": "...",
-  "matchedDate": {
-    "day": "...",
-    "month": "...",
-    "time": "...",
-    "rawText": "..."
-  }
-}
-```
-
-Si querés resetearla y permitir un nuevo disparo antes de que termine el cooldown, borrá:
-
-```text
+```txt
 state/alarm-fired.json
+```
+
+Para resetear:
+
+```bash
+del state\alarm-fired.json
+```
+
+## Probar parser sin esperar a la web real
+
+```bash
+npm test
 ```

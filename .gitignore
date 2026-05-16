@@ -2,7 +2,6 @@ node_modules/
 dist/
 .env
 .playwright-profile/
-state/alarm-fired.json
-tmp_frames/
-tmp_frames_4fps/
-run-dev*.log
+state/*.json
+playwright-report/
+test-results/

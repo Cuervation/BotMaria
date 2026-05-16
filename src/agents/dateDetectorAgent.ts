@@ -1,178 +1,138 @@
-import { Locator, Page } from 'playwright';
-import { Logger } from '../utils/logger';
-const { parseDateCardText } = require('./dateCardParser');
+import type { Page } from "playwright";
+import { log } from "../utils/logger.js";
 
-export interface ParsedDateCard {
-  day: string;
-  month: string;
-  time: string;
+const MONTHS = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Setiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
+
+export type ParsedDateCard = {
+  day: string | null;
+  month: string | null;
+  time: string | null;
   rawText: string;
-}
+  hasSelect: boolean;
+  isSoldOut: boolean;
+};
 
-export interface DateDetectionResult {
-  found: boolean;
-  reason: 'available_date_matching_regex' | 'no_matching_available_date';
-  day?: string;
-  month?: string;
-  time?: string;
-  rawText?: string;
-}
-
-interface DateCardCandidate {
-  rawText: string;
-  source: string;
-}
-
-function normalizeText(value: string): string {
-  return value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
-function stripWhitespace(value: string): string {
-  return value.replace(/\s+/g, ' ').trim();
-}
-
-function uniqueByRawText(items: DateCardCandidate[]): DateCardCandidate[] {
-  const seen = new Set<string>();
-  const output: DateCardCandidate[] = [];
-
-  for (const item of items) {
-    const key = stripWhitespace(item.rawText);
-    if (seen.has(key)) {
-      continue;
+export type DateDetectionResult =
+  | {
+      found: true;
+      day: string;
+      month: string | null;
+      time: string | null;
+      rawText: string;
+      reason: "available_date_matching_regex";
     }
+  | {
+      found: false;
+      reason:
+        | "no_select_buttons"
+        | "no_matching_available_date"
+        | "date_screen_not_loaded";
+    };
 
-    seen.add(key);
-    output.push({ ...item, rawText: key });
-  }
-
-  return output;
+function normalizeText(rawText: string): string {
+  return rawText.replace(/\s+/g, " ").trim();
 }
 
-export { parseDateCardText };
+export function parseDateCardText(rawText: string): ParsedDateCard {
+  const normalized = normalizeText(rawText);
+  const monthPattern = MONTHS.join("|");
 
-export class DateDetectorAgent {
-  private readonly dayRegex: RegExp;
+  const dateMatch = normalized.match(new RegExp(`\\b([0-3]?\\d)\\s+(${monthPattern})\\b`, "i"));
+  const timeMatch = normalized.match(/\b([0-2]?\d:[0-5]\d\s*hs?)\b/i);
 
-  constructor(
-    private readonly targetArtist: string,
-    private readonly targetDayRegex: RegExp,
-    private readonly logger: Logger,
-  ) {
-    this.dayRegex = new RegExp(this.targetDayRegex.source, this.targetDayRegex.flags.replace(/[gy]/g, ''));
-  }
+  return {
+    day: dateMatch?.[1] ?? null,
+    month: dateMatch?.[2] ?? null,
+    time: timeMatch?.[1] ?? null,
+    rawText: normalized,
+    hasSelect: /seleccionar/i.test(normalized),
+    isSoldOut: /agotado/i.test(normalized),
+  };
+}
 
-  async inspect(page: Page): Promise<DateDetectionResult> {
-    this.logger.info('Buscando fechas disponibles...', { targetArtist: this.targetArtist });
+async function getLikelyCardTextFromSelect(page: Page, selectIndex: number): Promise<string | null> {
+  const selectLocator = page.getByText(/Seleccionar/i).nth(selectIndex);
 
-    const artistVisible = await this.pageContainsTargetArtist(page);
-    if (!artistVisible) {
-      this.logger.info('No hay fechas veintipico disponibles todavia');
-      return { found: false, reason: 'no_matching_available_date' };
-    }
-
-    const candidates = await this.collectSelectableCards(page);
-
-    if (candidates.length === 0) {
-      this.logger.info('No hay fechas veintipico disponibles todavia');
-      return { found: false, reason: 'no_matching_available_date' };
-    }
-
-    for (const candidate of uniqueByRawText(candidates)) {
-      if (normalizeText(candidate.rawText).includes('agotado')) {
-        continue;
-      }
-
-      const parsed = parseDateCardText(candidate.rawText);
-      if (!parsed) {
-        continue;
-      }
-
-      if (this.dayRegex.test(parsed.day)) {
-        this.logger.info(`Fecha disponible detectada: ${parsed.day} ${parsed.month} ${parsed.time}`, {
-          rawText: parsed.rawText,
-          source: candidate.source,
-        });
-
-        return {
-          found: true,
-          reason: 'available_date_matching_regex',
-          day: parsed.day,
-          month: parsed.month,
-          time: parsed.time,
-          rawText: parsed.rawText,
-        };
-      }
-
-      this.logger.info(`Fecha disponible no matchea regex: ${parsed.day} ${parsed.month} ${parsed.time}`, {
-        rawText: parsed.rawText,
-        source: candidate.source,
-        targetDayRegex: this.dayRegex.source,
-      });
-    }
-
-    this.logger.info('No hay fechas veintipico disponibles todavia');
-    return { found: false, reason: 'no_matching_available_date' };
-  }
-
-  private async collectSelectableCards(page: Page): Promise<DateCardCandidate[]> {
-    const locators: Array<{ label: string; locator: Locator }> = [
-      { label: 'role-link', locator: page.getByRole('link', { name: /Seleccionar|Comprar/i }) },
-      { label: 'role-button', locator: page.getByRole('button', { name: /Seleccionar|Comprar/i }) },
-      { label: 'text', locator: page.getByText(/Seleccionar|Comprar/i) },
-    ];
-
-    const candidates: DateCardCandidate[] = [];
-
-    for (const { label, locator } of locators) {
-      const count = await locator.count().catch(() => 0);
-
-      for (let index = 0; index < count; index += 1) {
-        const item = locator.nth(index);
-        const container = await this.findReasonableContainer(item);
-        const rawText = await container.innerText({ timeout: 5_000 }).catch(() => '');
-        if (!stripWhitespace(rawText)) {
-          continue;
-        }
-
-        candidates.push({
-          rawText,
-          source: label,
-        });
-      }
-    }
-
-    return candidates;
-  }
-
-  private async findReasonableContainer(locator: Locator): Promise<Locator> {
-    const container = locator.locator(
-      'xpath=ancestor-or-self::*[self::li or self::article or self::section or self::tr or self::div or self::button or @role="listitem" or @data-testid][1]',
+  for (let depth = 1; depth <= 8; depth += 1) {
+    const container = selectLocator.locator(
+      `xpath=ancestor::*[self::article or self::li or self::section or self::div][${depth}]`,
     );
 
-    const count = await container.count().catch(() => 0);
-    if (count > 0) {
-      return container.first();
-    }
+    const text = await container.innerText({ timeout: 1500 }).catch(() => "");
+    const parsed = parseDateCardText(text);
 
-    return locator;
+    if (parsed.day && parsed.month && parsed.hasSelect) {
+      return text;
+    }
   }
 
-  private async pageContainsTargetArtist(page: Page): Promise<boolean> {
-    const target = normalizeText(this.targetArtist);
+  const directText = await selectLocator.innerText({ timeout: 1500 }).catch(() => "");
+  return directText || null;
+}
 
-    const bodyText = await page.locator('body').innerText({ timeout: 10_000 }).catch(() => '');
-    if (normalizeText(bodyText).includes(target)) {
-      return true;
+export class DateDetectorAgent {
+  constructor(private readonly targetDayRegex: RegExp) {}
+
+  async detect(page: Page): Promise<DateDetectionResult> {
+    log("Buscando fechas disponibles...");
+
+    const bodyText = await page.locator("body").innerText({ timeout: 5000 }).catch(() => "");
+
+    if (!/Seleccion[aá]\s+una\s+fecha|Mar[ií]a\s+Becerra|Seleccionar/i.test(bodyText)) {
+      return { found: false, reason: "date_screen_not_loaded" };
     }
 
-    const exact = page.getByText(new RegExp(this.escapeRegex(this.targetArtist), 'i'));
-    return (await exact.count().catch(() => 0)) > 0;
-  }
+    const selectCount = await page.getByText(/Seleccionar/i).count().catch(() => 0);
 
-  private escapeRegex(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (selectCount === 0) {
+      log("No encontré botones/textos Seleccionar.");
+      return { found: false, reason: "no_select_buttons" };
+    }
+
+    const maxToInspect = Math.min(selectCount, 30);
+
+    for (let index = 0; index < maxToInspect; index += 1) {
+      const rawText = await getLikelyCardTextFromSelect(page, index);
+      if (!rawText) continue;
+
+      const parsed = parseDateCardText(rawText);
+
+      if (!parsed.hasSelect || parsed.isSoldOut || !parsed.day) {
+        continue;
+      }
+
+      if (!this.targetDayRegex.test(parsed.day)) {
+        log(`Fecha disponible no matchea regex: ${parsed.rawText}`);
+        continue;
+      }
+
+      log(`Fecha disponible detectada: ${parsed.rawText}`);
+
+      return {
+        found: true,
+        day: parsed.day,
+        month: parsed.month,
+        time: parsed.time,
+        rawText: parsed.rawText,
+        reason: "available_date_matching_regex",
+      };
+    }
+
+    log("No hay fechas veintipico disponibles todavía.");
+    return { found: false, reason: "no_matching_available_date" };
   }
 }

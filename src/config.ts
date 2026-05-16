@@ -1,90 +1,78 @@
-import dotenv from 'dotenv';
-import { z } from 'zod';
+import "dotenv/config";
+import path from "node:path";
+import { z } from "zod";
 
-dotenv.config();
-
-function parseBoolean(value: unknown): unknown {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-
-  if (value === undefined || value === null) {
-    return value;
-  }
-
-  if (typeof value !== 'string') {
-    return value;
-  }
-
-  const normalized = value.trim().toLowerCase();
-
-  if (['1', 'true', 'yes', 'y', 'on'].includes(normalized)) {
-    return true;
-  }
-
-  if (['0', 'false', 'no', 'n', 'off', ''].includes(normalized)) {
-    if (normalized === '') {
-      return undefined;
-    }
-
-    return false;
-  }
-
-  return value;
+function boolFromEnv(defaultValue: boolean) {
+  return z.preprocess((value) => {
+    if (value === undefined || value === null || value === "") return defaultValue;
+    if (typeof value === "boolean") return value;
+    return String(value).toLowerCase() === "true";
+  }, z.boolean());
 }
 
-const EnvSchema = z.object({
-  MONITOR_URL: z.string().trim().min(1, 'MONITOR_URL is required'),
-  TARGET_ARTIST: z.string().trim().min(1).default('María Becerra'),
-  TARGET_DAY_REGEX: z.string().trim().min(1).default('^2\\d$'),
-  CHECK_INTERVAL_MS: z.coerce.number().int().min(30_000, 'CHECK_INTERVAL_MS must be at least 30000').default(30_000),
-  ALARM_YOUTUBE_URL: z.string().trim().url().default('https://www.youtube.com/watch?v=Terd4qKkb6k'),
-  PLAYWRIGHT_USER_DATA_DIR: z.string().trim().min(1).default('.playwright-profile'),
-  FORCE_SPEAKERS: z.preprocess(parseBoolean, z.boolean()).default(true),
-  SPEAKER_DEVICE_NAME: z.string().trim().min(1).default('Altavoces'),
-  FORCE_SYSTEM_VOLUME: z.preprocess(parseBoolean, z.boolean()).default(true),
-  SPEAKER_SCRIPT_PATH: z.string().trim().min(1).default('scripts/set-speakers.ps1'),
-  ALARM_COOLDOWN_MINUTES: z.coerce.number().int().positive().default(60),
-  STATE_DIR: z.string().trim().min(1).default('state'),
+function intFromEnv(defaultValue: number) {
+  return z.preprocess((value) => {
+    if (value === undefined || value === null || value === "") return defaultValue;
+    return Number(value);
+  }, z.number().int());
+}
+
+const envSchema = z.object({
+  MONITOR_URL: z.string().default(""),
+  TARGET_ARTIST: z.string().default("María Becerra"),
+  TARGET_DAY_REGEX: z.string().default("^2\\d$"),
+  CHECK_INTERVAL_MS: intFromEnv(30000).refine((value) => value >= 30000, {
+    message: "CHECK_INTERVAL_MS no puede ser menor a 30000 para no spamear el sitio.",
+  }),
+
+  ALARM_YOUTUBE_URL: z.string().url().default("https://www.youtube.com/watch?v=Terd4qKkb6k"),
+  ALARM_COOLDOWN_MINUTES: intFromEnv(60).refine((value) => value >= 1),
+
+  PLAYWRIGHT_USER_DATA_DIR: z.string().default(".playwright-profile"),
+  STATE_DIR: z.string().default("state"),
+
+  LOGIN_ENABLED: boolFromEnv(true),
+  LOGIN_START_TEXT: z.string().default("Iniciar sesión"),
+  LOGIN_SUBMIT_TEXT: z.string().default("Ingresar"),
+  LOGIN_WAIT_MS: intFromEnv(3000),
+  POST_LOGIN_WAIT_MS: intFromEnv(5000),
+
+  FORCE_SPEAKERS: boolFromEnv(true),
+  SPEAKER_DEVICE_NAME: z.string().default("Altavoces"),
+  FORCE_SYSTEM_VOLUME: boolFromEnv(true),
+  SPEAKER_SCRIPT_PATH: z.string().default("scripts/set-speakers.ps1"),
 });
 
-export interface AppConfig {
-  monitorUrl: string;
-  targetArtist: string;
-  targetDayRegex: RegExp;
-  checkIntervalMs: number;
-  alarmYoutubeUrl: string;
-  playwrightUserDataDir: string;
-  forceSpeakers: boolean;
-  speakerDeviceName: string;
-  forceSystemVolume: boolean;
-  speakerScriptPath: string;
-  alarmCooldownMinutes: number;
-  stateDir: string;
+const parsed = envSchema.parse(process.env);
+
+try {
+  new RegExp(parsed.TARGET_DAY_REGEX);
+} catch {
+  throw new Error(`TARGET_DAY_REGEX inválido: ${parsed.TARGET_DAY_REGEX}`);
 }
 
-export function loadConfig(): AppConfig {
-  const parsed = EnvSchema.parse(process.env);
+export const config = {
+  monitorUrl: parsed.MONITOR_URL,
+  targetArtist: parsed.TARGET_ARTIST,
+  targetDayRegex: parsed.TARGET_DAY_REGEX,
+  checkIntervalMs: parsed.CHECK_INTERVAL_MS,
 
-  let targetDayRegex: RegExp;
-  try {
-    targetDayRegex = new RegExp(parsed.TARGET_DAY_REGEX);
-  } catch (error) {
-    throw new Error(`Invalid TARGET_DAY_REGEX: ${parsed.TARGET_DAY_REGEX}`);
-  }
+  alarmYoutubeUrl: parsed.ALARM_YOUTUBE_URL,
+  alarmCooldownMinutes: parsed.ALARM_COOLDOWN_MINUTES,
 
-  return {
-    monitorUrl: parsed.MONITOR_URL,
-    targetArtist: parsed.TARGET_ARTIST,
-    targetDayRegex,
-    checkIntervalMs: parsed.CHECK_INTERVAL_MS,
-    alarmYoutubeUrl: parsed.ALARM_YOUTUBE_URL,
-    playwrightUserDataDir: parsed.PLAYWRIGHT_USER_DATA_DIR,
-    forceSpeakers: parsed.FORCE_SPEAKERS,
-    speakerDeviceName: parsed.SPEAKER_DEVICE_NAME,
-    forceSystemVolume: parsed.FORCE_SYSTEM_VOLUME,
-    speakerScriptPath: parsed.SPEAKER_SCRIPT_PATH,
-    alarmCooldownMinutes: parsed.ALARM_COOLDOWN_MINUTES,
-    stateDir: parsed.STATE_DIR,
-  };
-}
+  playwrightUserDataDir: path.resolve(parsed.PLAYWRIGHT_USER_DATA_DIR),
+  stateDir: path.resolve(parsed.STATE_DIR),
+
+  loginEnabled: parsed.LOGIN_ENABLED,
+  loginStartText: parsed.LOGIN_START_TEXT,
+  loginSubmitText: parsed.LOGIN_SUBMIT_TEXT,
+  loginWaitMs: parsed.LOGIN_WAIT_MS,
+  postLoginWaitMs: parsed.POST_LOGIN_WAIT_MS,
+
+  forceSpeakers: parsed.FORCE_SPEAKERS,
+  speakerDeviceName: parsed.SPEAKER_DEVICE_NAME,
+  forceSystemVolume: parsed.FORCE_SYSTEM_VOLUME,
+  speakerScriptPath: path.resolve(parsed.SPEAKER_SCRIPT_PATH),
+};
+
+export type AppConfig = typeof config;

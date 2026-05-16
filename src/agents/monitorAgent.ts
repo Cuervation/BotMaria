@@ -1,73 +1,78 @@
-import { Page } from 'playwright';
-import { Logger } from '../utils/logger';
-
-export interface MonitorSnapshot {
-  url: string;
-  title: string;
-  bodyText: string;
-  textBlocks: string[];
-  capturedAt: string;
-}
+import type { BrowserContext, Page } from "playwright";
+import type { AppConfig } from "../config.js";
+import { DateDetectorAgent } from "./dateDetectorAgent.js";
+import { LoginAgent } from "./loginAgent.js";
+import { AlarmAgent } from "./alarmAgent.js";
+import { log, warn } from "../utils/logger.js";
+import { sleep } from "../utils/sleep.js";
 
 export class MonitorAgent {
+  private readonly loginAgent: LoginAgent;
+  private readonly dateDetectorAgent: DateDetectorAgent;
+  private readonly alarmAgent: AlarmAgent;
+
   constructor(
-    private readonly page: Page,
-    private readonly targetUrl: string,
-    private readonly logger: Logger,
-  ) {}
-
-  async capture(): Promise<MonitorSnapshot> {
-    this.logger.info('MonitorAgent navigating to target page.', { url: this.targetUrl });
-
-    await this.page.goto(this.targetUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
-
-    await this.page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {
-      this.logger.debug('Network idle wait timed out; continuing with visible content snapshot.');
-    });
-
-    const title = await this.page.title().catch(() => '');
-    const bodyText = await this.page.locator('body').innerText({ timeout: 15_000 }).catch(() => '');
-    const textBlocks = await this.collectTextBlocks();
-
-    return {
-      url: this.page.url(),
-      title,
-      bodyText,
-      textBlocks,
-      capturedAt: new Date().toISOString(),
-    };
+    private readonly context: BrowserContext,
+    private readonly appConfig: AppConfig,
+  ) {
+    this.loginAgent = new LoginAgent(appConfig);
+    this.dateDetectorAgent = new DateDetectorAgent(new RegExp(appConfig.targetDayRegex));
+    this.alarmAgent = new AlarmAgent(context, appConfig);
   }
 
-  private async collectTextBlocks(): Promise<string[]> {
-    const selectors = ['main', 'article', 'section', 'li', 'button', 'a', '[role="button"]', 'div', 'span'];
+  async getActivePage(): Promise<Page> {
+    const pages = this.context.pages().filter((page) => !page.isClosed());
 
-    return this.page.evaluate((candidateSelectors) => {
-      const seen = new Set<string>();
-      const blocks: string[] = [];
+    if (pages.length > 0) {
+      return pages[pages.length - 1];
+    }
 
-      for (const selector of candidateSelectors) {
-        const elements = Array.from(document.querySelectorAll(selector));
+    return this.context.newPage();
+  }
 
-        for (const element of elements) {
-          const text = (element.textContent ?? '')
-            .replace(/\s+/g, ' ')
-            .trim();
+  async isQueueOrWaitingRoom(page: Page): Promise<boolean> {
+    const bodyText = await page.locator("body").innerText({ timeout: 5000 }).catch(() => "");
+    return /fila|queue|waiting room|sala de espera|esper[aá]|turno/i.test(bodyText);
+  }
 
-          if (text.length < 2 || text.length > 220) {
-            continue;
-          }
+  async isDateSelectionScreen(page: Page): Promise<boolean> {
+    const bodyText = await page.locator("body").innerText({ timeout: 5000 }).catch(() => "");
+    return /Seleccion[aá]\s+una\s+fecha|Mar[ií]a\s+Becerra|Seleccionar/i.test(bodyText);
+  }
 
-          if (seen.has(text)) {
-            continue;
-          }
+  async run(): Promise<void> {
+    log("MonitorAgent iniciado.");
 
-          seen.add(text);
-          blocks.push(text);
+    while (true) {
+      try {
+        const page = await this.getActivePage();
+
+        await this.loginAgent.loginIfNeeded(page);
+
+        if (await this.isQueueOrWaitingRoom(page)) {
+          log("Todavía parece haber fila virtual o espera. Sigo monitoreando...");
+          await sleep(this.appConfig.checkIntervalMs);
+          continue;
         }
+
+        if (!(await this.isDateSelectionScreen(page))) {
+          log("Todavía no parece estar la pantalla de fechas. Sigo monitoreando la página activa...");
+          await sleep(this.appConfig.checkIntervalMs);
+          continue;
+        }
+
+        const result = await this.dateDetectorAgent.detect(page);
+
+        if (result.found) {
+          await this.alarmAgent.fire(result);
+        } else {
+          log(`Todavía no apareció fecha veintipico disponible. reason=${result.reason}`);
+        }
+      } catch (err) {
+        warn("Falló un ciclo de monitoreo, pero el bot sigue vivo.", err);
       }
 
-      return blocks.slice(0, 500);
-    }, selectors).catch(() => []);
+      await sleep(this.appConfig.checkIntervalMs);
+    }
   }
 }
-
