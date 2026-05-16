@@ -18,7 +18,8 @@ https://www.youtube.com/watch?v=vOapgSfSN1s&list=RDEMCgLb_8NFlBz0UcgoUIrqFQ&star
   para entrar al flujo del evento.
 - Intenta cambiar audio a parlantes y volumen 100% antes de disparar YouTube.
 - Detecta fechas válidas con acción `Seleccionar` o `Comprar`.
-- Puede hacer asistencia de compra configurable dentro de la misma card/fila detectada.
+- Avanza hasta dejarte parado en la pantalla de selección de la fecha detectada.
+- No usa archivos persistentes para bloquear nuevos intentos válidos.
 
 ## Fila virtual / waiting room
 
@@ -72,10 +73,11 @@ Flujo esperado:
 2. Ignorar fechas con `Agotado`.
 3. Disparar alarma.
 4. Llevar la pestaña al frente.
-5. Buscar el botón configurado, primero `Comprar` y luego `Seleccionar`.
-6. Clickear dentro de la misma card/fila detectada si la opción está habilitada por `.env`.
-7. Guardar estado para no repetir clicks infinitamente.
-8. Detenerse ante captcha, pago final o confirmación irreversible.
+5. Si está en pantalla previa, clickear `Comprar` sobre esa fecha.
+6. Esperar la pantalla de fechas.
+7. Clickear `Seleccionar` sobre la misma fecha.
+8. Quedar detenido 30 minutos para intervención humana.
+9. Detenerse ante captcha, pago final o confirmación irreversible.
 
 Variables:
 
@@ -84,7 +86,7 @@ PURCHASE_ASSIST_ENABLED=true
 PURCHASE_CLICK_ENABLED=true
 PURCHASE_BUTTON_TEXT=Comprar
 PURCHASE_FALLBACK_BUTTON_TEXT=Seleccionar
-PURCHASE_ACTION_COOLDOWN_MINUTES=60
+PURCHASE_ACTION_COOLDOWN_MINUTES=0
 ```
 
 ## Instalación
@@ -109,6 +111,8 @@ MONITOR_URL=
 TARGET_ARTIST=María Becerra
 TARGET_DAY_REGEX=^2\d$
 CHECK_INTERVAL_MS=30000
+ATTEMPT_RETRY_WAIT_MS=60000
+HUMAN_INTERVENTION_WAIT_MS=1800000
 
 LOGIN_ENABLED=true
 LOGIN_START_TEXT=Iniciar sesión
@@ -193,34 +197,21 @@ npm run monitor
 4. El bot monitorea la pantalla de fechas o la fila virtual.
 5. Si todavía no está en la pantalla de fechas, clickea el botón general `Comprar`.
 6. Si aparece una fecha `19` o `20-29` con `Seleccionar` / `Comprar`, abre YouTube y dispara alarma.
-7. Luego intenta la compra asistida dentro de la misma card/fila detectada si está habilitada.
-8. Ante captcha, pago final o confirmación irreversible, debe quedar intervención humana.
+7. Luego clickea `Comprar` o `Seleccionar` dentro de la misma card/fila detectada.
+8. Si después aparece pantalla de fechas, clickea `Seleccionar` sobre esa misma fecha.
+9. Queda detenido 30 minutos para intervención humana.
+10. Ante captcha, pago final o confirmación irreversible, debe quedar intervención humana.
 
-## Resetear alarma
+## Estado por intento
 
-El bot evita disparar muchas veces usando:
+El bot ya no usa estos archivos como bloqueo persistente:
 
 ```txt
 state/alarm-fired.json
-```
-
-Para resetear:
-
-```bash
-del state\alarm-fired.json
-```
-
-## Resetear acción de compra asistida
-
-```txt
 state/purchase-action-fired.json
 ```
 
-Para resetear:
-
-```bash
-del state\purchase-action-fired.json
-```
+Si existen por versiones anteriores, se limpian automáticamente al empezar cada intento nuevo.
 
 ## Probar parser sin esperar a la web real
 

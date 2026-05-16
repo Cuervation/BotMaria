@@ -42,3 +42,12 @@ test("soporta acción Comprar como texto válido", () => {
   assert.equal(parsed.time, "21:00 hs");
   assert.equal(parsed.hasActionText, true);
 });
+
+test("prefiere horario de show cuando hay puertas y show", () => {
+  const parsed = parseDateCardText("19 Noviembre HORARIOS 19:00 hs Puertas 21:00 hs Show Comprar", /Seleccionar|Comprar/i);
+
+  assert.equal(parsed.day, "19");
+  assert.equal(parsed.month, "Noviembre");
+  assert.equal(parsed.time, "21:00 hs");
+  assert.equal(parsed.hasActionText, true);
+});

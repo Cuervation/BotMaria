@@ -2,8 +2,10 @@ import { chromium } from "playwright";
 import { config } from "./config.js";
 import { MonitorAgent } from "./agents/monitorAgent.js";
 import { log, warn } from "./utils/logger.js";
+import { printStartupAscii } from "./utils/startupAscii.js";
 
 async function main(): Promise<void> {
+  printStartupAscii();
   log("Iniciando BotMaria...");
   log(`CHECK_INTERVAL_MS=${config.checkIntervalMs}`);
   log(`TARGET_DAY_REGEX=${config.targetDayRegex}`);
@@ -30,17 +32,6 @@ async function main(): Promise<void> {
 
   process.on("SIGINT", () => void shutdown());
   process.on("SIGTERM", () => void shutdown());
-
-  const page = context.pages()[0] ?? await context.newPage();
-
-  if (config.monitorUrl) {
-    log(`Abriendo MONITOR_URL: ${config.monitorUrl}`);
-    await page.goto(config.monitorUrl, { waitUntil: "domcontentloaded", timeout: 45000 });
-  } else {
-    log("MONITOR_URL está vacío.");
-    log("Navegá manualmente hasta la pantalla de fechas de María Becerra. El bot va a monitorear la página activa.");
-    await page.goto("about:blank");
-  }
 
   const monitorAgent = new MonitorAgent(context, config);
   await monitorAgent.run();

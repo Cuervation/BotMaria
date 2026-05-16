@@ -1,28 +1,20 @@
-import path from "node:path";
 import type { Page } from "playwright";
 import type { AppConfig } from "../config.js";
 import type { DateDetectionResult } from "./dateDetectorAgent.js";
 import { parseDateCardText } from "./dateDetectorAgent.js";
 import { log, warn } from "../utils/logger.js";
-import { readJsonFile, writeJsonFile } from "../utils/fsState.js";
 import { sleep } from "../utils/sleep.js";
-
-type PurchaseActionState = {
-  firedAt: string;
-  reason: string;
-  buttonText: string;
-  matchedDate: {
-    day: string;
-    month: string | null;
-    time: string | null;
-    rawText: string;
-  };
-};
 
 type ButtonCandidate = {
   label: string;
   click: () => Promise<void>;
 };
+
+export type PurchaseAssistResult =
+  | { status: "selected" }
+  | { status: "disabled" }
+  | { status: "blocked"; reason: "captcha_or_payment_or_final_confirmation" }
+  | { status: "not_found" };
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -38,81 +30,93 @@ function sameText(a: string | null | undefined, b: string | null | undefined): b
 }
 
 export class PurchaseAssistAgent {
-  private readonly stateFile: string;
+  private firedInCurrentAttempt = false;
 
-  constructor(private readonly appConfig: AppConfig) {
-    this.stateFile = path.join(appConfig.stateDir, "purchase-action-fired.json");
+  constructor(private readonly appConfig: AppConfig) {}
+
+  resetAttempt(): void {
+    this.firedInCurrentAttempt = false;
   }
 
-  async assist(page: Page, match: Extract<DateDetectionResult, { found: true }>): Promise<void> {
-    if (!this.appConfig.purchaseAssistEnabled) {
+  async assist(page: Page, match: Extract<DateDetectionResult, { found: true }>): Promise<PurchaseAssistResult> {
+    if (!this.appConfig.purchaseAssistEnabled || !this.appConfig.purchaseClickEnabled) {
       log("PurchaseAssistAgent deshabilitado por configuración.");
-      return;
+      return { status: "disabled" };
     }
 
-    if (!this.appConfig.purchaseClickEnabled) {
-      log("PurchaseAssistAgent habilitado, pero PURCHASE_CLICK_ENABLED=false. No hago click.");
-      return;
-    }
-
-    const recentState = await this.getRecentState();
-    if (recentState) {
-      log("Purchase assist already fired recently, skipping duplicate action.", recentState);
-      return;
+    if (this.firedInCurrentAttempt) {
+      log("Purchase assist already fired in this attempt, skipping duplicate action.");
+      return { status: "disabled" };
     }
 
     await page.bringToFront().catch(() => undefined);
     await this.handleCommonDialogs(page);
 
     if (await this.pageHasBlockingScreen(page)) {
-      warn("Encontré captcha, pago final o confirmación irreversible. Dejo intervención humana.");
-      return;
+      warn("Automatización detenida: captcha, pago final o confirmación irreversible detectada.");
+      return { status: "blocked", reason: "captcha_or_payment_or_final_confirmation" };
     }
 
-    const button = await this.findMatchingButton(page, match);
-    if (!button) {
-      log("No encontré un botón de compra/selección dentro de la card detectada.");
-      return;
+    const firstButton = await this.findMatchingButton(page, match, [
+      this.appConfig.purchaseButtonText,
+      this.appConfig.purchaseFallbackButtonText,
+      "Seleccionar",
+    ]);
+
+    if (!firstButton) {
+      log("No encontré botón Comprar/Seleccionar dentro de la card detectada.");
+      return { status: "not_found" };
     }
 
-    log("Intentando click de compra asistida...");
+    log(`Intentando click de compra asistida sobre ${firstButton.label}...`);
+    await firstButton.click();
+    this.firedInCurrentAttempt = true;
+    log(`Click de compra asistida realizado sobre fecha detectada: ${firstButton.label}`);
 
-    await button.click().catch((err) => {
-      warn(`No pude clickear el botón ${button.label}.`, err);
-      throw err;
-    });
+    if (/seleccionar/i.test(firstButton.label)) {
+      log("Fecha seleccionada. Quedo detenido para intervención humana.");
+      return { status: "selected" };
+    }
 
-    log("Click de compra asistida realizado sobre fecha detectada");
+    await this.waitForNonBlockingControls(page);
 
-    const state: PurchaseActionState = {
-      firedAt: new Date().toISOString(),
-      reason: "purchase_button_clicked",
-      buttonText: button.label,
-      matchedDate: {
-        day: match.day,
-        month: match.month,
-        time: match.time,
-        rawText: match.rawText,
-      },
-    };
+    if (await this.pageHasBlockingScreen(page)) {
+      warn("Automatización detenida después de Comprar: captcha, pago final o confirmación irreversible detectada.");
+      return { status: "blocked", reason: "captcha_or_payment_or_final_confirmation" };
+    }
 
-    await writeJsonFile(this.stateFile, state);
-    await sleep(500);
+    const selectButton = await this.findMatchingButton(page, match, ["Seleccionar", this.appConfig.purchaseFallbackButtonText]);
+    if (!selectButton) {
+      log("No encontré botón Seleccionar para la fecha detectada después de Comprar.");
+      return { status: "not_found" };
+    }
+
+    log("Intentando click en Seleccionar sobre fecha detectada...");
+    await selectButton.click();
+    log("Click en Seleccionar realizado sobre fecha detectada");
+
+    return { status: "selected" };
   }
 
-  private async getRecentState(): Promise<PurchaseActionState | null> {
-    const state = await readJsonFile<PurchaseActionState>(this.stateFile);
-    if (!state) return null;
+  private async waitForNonBlockingControls(page: Page): Promise<void> {
+    for (let attempt = 1; attempt <= 60; attempt += 1) {
+      await page.bringToFront().catch(() => undefined);
 
-    const firedAtMs = new Date(state.firedAt).getTime();
-    if (Number.isNaN(firedAtMs)) return null;
+      if (await this.pageHasBlockingScreen(page)) return;
 
-    const elapsedMinutes = (Date.now() - firedAtMs) / 60000;
-    if (elapsedMinutes <= this.appConfig.purchaseActionCooldownMinutes) {
-      return state;
+      const bodyText = await page.locator("body").innerText({ timeout: 3000 }).catch(() => "");
+      if (/Seleccion[aá]\s+una\s+fecha|Seleccionar/i.test(bodyText)) {
+        return;
+      }
+
+      if (/fila|queue|waiting room|sala de espera|esper[aá]|turno/i.test(bodyText)) {
+        log("Fila virtual detectada. Monitoreo sin saltear ni refrescar agresivamente.");
+        await sleep(this.appConfig.checkIntervalMs);
+        continue;
+      }
+
+      await sleep(1000);
     }
-
-    return null;
   }
 
   private async handleCommonDialogs(page: Page): Promise<void> {
@@ -139,46 +143,45 @@ export class PurchaseAssistAgent {
 
   private async pageHasBlockingScreen(page: Page): Promise<boolean> {
     const bodyText = await page.locator("body").innerText({ timeout: 5000 }).catch(() => "");
-    return /captcha|recaptcha|pago final|finalizar compra|confirmaci[oó]n irreversible|checkout|payment/i.test(bodyText);
+    return /captcha|recaptcha|pago final|finalizar compra|confirmaci[oó]n irreversible|checkout|payment|pagar|medio de pago|tarjeta/i.test(bodyText);
   }
 
   private async findMatchingButton(
     page: Page,
     match: Extract<DateDetectionResult, { found: true }>,
+    labels: string[],
   ): Promise<ButtonCandidate | null> {
     const actionRegex = new RegExp(this.appConfig.availableActionTextRegex);
+    const seen = new Set<string>();
 
-    const allButtons = page.locator('button, a, [role="button"]');
-    const total = await allButtons.count().catch(() => 0);
+    for (const label of labels) {
+      const trimmed = label.trim();
+      if (!trimmed || seen.has(trimmed.toLowerCase())) continue;
+      seen.add(trimmed.toLowerCase());
 
-    for (let index = 0; index < Math.min(total, 60); index += 1) {
-      const candidate = allButtons.nth(index);
-      const visible = await candidate.isVisible({ timeout: 1000 }).catch(() => false);
-      if (!visible) continue;
+      const locator = page.locator('button, a, [role="button"]').filter({
+        hasText: new RegExp(escapeRegex(trimmed), "i"),
+      });
+      const total = await locator.count().catch(() => 0);
 
-      const container = candidate.locator('xpath=ancestor::*[self::article or self::li or self::section or self::div][1]');
-      const containerText = await container.innerText({ timeout: 2000 }).catch(() => "");
-      if (!containerText) continue;
+      for (let index = 0; index < Math.min(total, 60); index += 1) {
+        const candidate = locator.nth(index);
+        const visible = await candidate.isVisible({ timeout: 1000 }).catch(() => false);
+        if (!visible) continue;
 
-      const parsed = parseDateCardText(containerText, actionRegex);
-      if (!parsed.day || !parsed.hasActionText || parsed.isSoldOut) continue;
-      if (parsed.day !== match.day) continue;
-      if (!sameText(parsed.month, match.month)) continue;
-      if (!sameText(parsed.time, match.time)) continue;
+        for (let depth = 1; depth <= 8; depth += 1) {
+          const container = candidate.locator(
+            `xpath=ancestor::*[self::article or self::li or self::section or self::div][${depth}]`,
+          );
+          const containerText = await container.innerText({ timeout: 1500 }).catch(() => "");
+          if (!containerText) continue;
 
-      const preferredLabels = normalizeText(containerText).includes("seleccionar")
-        ? ["Seleccionar", this.appConfig.purchaseButtonText, this.appConfig.purchaseFallbackButtonText]
-        : [this.appConfig.purchaseButtonText, this.appConfig.purchaseFallbackButtonText, "Seleccionar"];
+          const parsed = parseDateCardText(containerText, actionRegex);
+          if (!parsed.day || parsed.isSoldOut) continue;
+          if (parsed.day !== match.day) continue;
+          if (!sameText(parsed.month, match.month)) continue;
+          if (!sameText(parsed.time, match.time)) continue;
 
-      for (const label of preferredLabels) {
-        const trimmed = label.trim();
-        if (!trimmed) continue;
-
-        const labelMatchesButton = new RegExp(escapeRegex(trimmed), "i");
-        const buttonText = await candidate.textContent().catch(() => "");
-        const isLabelMatch = buttonText ? labelMatchesButton.test(buttonText) : false;
-
-        if (isLabelMatch || normalizeText(containerText).includes(normalizeText(trimmed))) {
           return {
             label: trimmed,
             click: async () => {

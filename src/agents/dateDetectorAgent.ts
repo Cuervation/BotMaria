@@ -53,13 +53,14 @@ export function parseDateCardText(rawText: string, actionTextRegex: RegExp = /Se
   const monthPattern = MONTHS.join("|");
 
   const dateMatch = normalized.match(new RegExp(`\\b([0-3]?\\d)\\s+(${monthPattern})\\b`, "i"));
-  const timeMatch = normalized.match(/\b([0-2]?\d:[0-5]\d\s*hs?)\b/i);
+  const timeMatches = [...normalized.matchAll(/\b([0-2]?\d:[0-5]\d\s*hs?)\b/gi)];
+  const time = timeMatches.length > 0 ? timeMatches[timeMatches.length - 1]?.[1] ?? null : null;
   const hasActionText = actionTextRegex.test(normalized);
 
   return {
     day: dateMatch?.[1] ?? null,
     month: dateMatch?.[2] ?? null,
-    time: timeMatch?.[1] ?? null,
+    time,
     rawText: normalized,
     hasSelect: hasActionText,
     hasActionText,

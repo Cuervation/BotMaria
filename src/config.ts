@@ -24,9 +24,13 @@ const envSchema = z.object({
   CHECK_INTERVAL_MS: intFromEnv(30000).refine((value) => value >= 30000, {
     message: "CHECK_INTERVAL_MS no puede ser menor a 30000 para no spamear el sitio.",
   }),
+  ATTEMPT_RETRY_WAIT_MS: intFromEnv(60000).refine((value) => value >= 60000, {
+    message: "ATTEMPT_RETRY_WAIT_MS no puede ser menor a 60000.",
+  }),
+  HUMAN_INTERVENTION_WAIT_MS: intFromEnv(1800000).refine((value) => value >= 60000),
 
   ALARM_YOUTUBE_URL: z.string().url().default("https://www.youtube.com/watch?v=vOapgSfSN1s&list=RDEMCgLb_8NFlBz0UcgoUIrqFQ&start_radio=1"),
-  ALARM_COOLDOWN_MINUTES: intFromEnv(60).refine((value) => value >= 1),
+  ALARM_COOLDOWN_MINUTES: intFromEnv(0),
 
   PLAYWRIGHT_USER_DATA_DIR: z.string().default(".playwright-profile"),
   STATE_DIR: z.string().default("state"),
@@ -55,7 +59,7 @@ const envSchema = z.object({
   PURCHASE_CLICK_ENABLED: boolFromEnv(true),
   PURCHASE_BUTTON_TEXT: z.string().default("Comprar"),
   PURCHASE_FALLBACK_BUTTON_TEXT: z.string().default("Seleccionar"),
-  PURCHASE_ACTION_COOLDOWN_MINUTES: intFromEnv(60).refine((value) => value >= 1),
+  PURCHASE_ACTION_COOLDOWN_MINUTES: intFromEnv(0),
 });
 
 const parsed = envSchema.parse(process.env);
@@ -77,6 +81,8 @@ export const config = {
   targetArtist: parsed.TARGET_ARTIST,
   targetDayRegex: parsed.TARGET_DAY_REGEX,
   checkIntervalMs: parsed.CHECK_INTERVAL_MS,
+  attemptRetryWaitMs: parsed.ATTEMPT_RETRY_WAIT_MS,
+  humanInterventionWaitMs: parsed.HUMAN_INTERVENTION_WAIT_MS,
 
   alarmYoutubeUrl: parsed.ALARM_YOUTUBE_URL,
   alarmCooldownMinutes: parsed.ALARM_COOLDOWN_MINUTES,

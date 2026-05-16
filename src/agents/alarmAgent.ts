@@ -1,22 +1,9 @@
-import path from "node:path";
 import type { BrowserContext, Page } from "playwright";
 import type { AppConfig } from "../config.js";
 import type { DateDetectionResult } from "./dateDetectorAgent.js";
 import { SpeakerAgent } from "./speakerAgent.js";
 import { log, warn } from "../utils/logger.js";
-import { readJsonFile, writeJsonFile } from "../utils/fsState.js";
 import { sleep } from "../utils/sleep.js";
-
-type AlarmState = {
-  firedAt: string;
-  reason: string;
-  matchedDate: {
-    day: string;
-    month: string | null;
-    time: string | null;
-    rawText: string;
-  };
-};
 
 function withAutoplay(url: string): string {
   const parsed = new URL(url);
@@ -26,21 +13,12 @@ function withAutoplay(url: string): string {
 
 export class AlarmAgent {
   private readonly speakerAgent: SpeakerAgent;
-  private readonly stateFile: string;
 
   constructor(private readonly context: BrowserContext, private readonly appConfig: AppConfig) {
     this.speakerAgent = new SpeakerAgent(appConfig);
-    this.stateFile = path.join(appConfig.stateDir, "alarm-fired.json");
   }
 
-  async fire(match: Extract<DateDetectionResult, { found: true }>): Promise<void> {
-    const recentState = await this.getRecentAlarmState();
-
-    if (recentState) {
-      log("Alarm already fired recently, skipping duplicate alarm.", recentState);
-      return;
-    }
-
+  async fire(match: Extract<DateDetectionResult, { found: true }>): Promise<Page> {
     log(`Alarm fired because date matched: ${match.rawText}`);
 
     await this.speakerAgent.forceSpeakersIfEnabled();
@@ -56,33 +34,7 @@ export class AlarmAgent {
     await this.handleCommonDialogs(page);
     await this.tryStartVideo(page);
 
-    const state: AlarmState = {
-      firedAt: new Date().toISOString(),
-      reason: match.reason,
-      matchedDate: {
-        day: match.day,
-        month: match.month,
-        time: match.time,
-        rawText: match.rawText,
-      },
-    };
-
-    await writeJsonFile(this.stateFile, state);
-  }
-
-  private async getRecentAlarmState(): Promise<AlarmState | null> {
-    const state = await readJsonFile<AlarmState>(this.stateFile);
-    if (!state) return null;
-
-    const firedAtMs = new Date(state.firedAt).getTime();
-    if (Number.isNaN(firedAtMs)) return null;
-
-    const elapsedMinutes = (Date.now() - firedAtMs) / 60000;
-    if (elapsedMinutes <= this.appConfig.alarmCooldownMinutes) {
-      return state;
-    }
-
-    return null;
+    return page;
   }
 
   private async handleCommonDialogs(page: Page): Promise<void> {

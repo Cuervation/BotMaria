@@ -9,6 +9,9 @@ Este proyecto es "agentic-style", pero **no usa LLM en runtime**. Codex puede mo
 - Se permite clickear controles configurados por el usuario, como `Comprar`, `Seleccionar`, `Continuar` o equivalentes, cuando estén disponibles por el flujo normal del sitio.
 - Se permite monitorear fila virtual / waiting room, esperar, detectar cambios y continuar cuando el sitio habilite controles normales.
 - Se permite login liviano: click en `Iniciar sesión` y luego `Ingresar` si las credenciales ya están cargadas/guardadas.
+- El estado de alarma/asistencia es por intento; no usar archivos persistentes para bloquear intentos nuevos válidos.
+- Si no aparece fecha válida, cerrar lo abierto en ese intento, esperar 1 minuto y reintentar desde cero.
+- Si se selecciona una fecha válida, quedar detenido 30 minutos para intervención humana.
 - No escribir usuario ni contraseña desde el bot.
 - No evadir captcha ni resolverlo automáticamente.
 - No romper protecciones técnicas del sitio.
@@ -80,7 +83,7 @@ Responsabilidades permitidas:
 - buscar primero `PURCHASE_BUTTON_TEXT` y luego `PURCHASE_FALLBACK_BUTTON_TEXT`
 - clickear el botón dentro de la misma card/fila detectada
 - usar fallback entre `PURCHASE_BUTTON_TEXT` y `PURCHASE_FALLBACK_BUTTON_TEXT`
-- guardar estado para no repetir clicks infinitamente
+- evitar clicks duplicados dentro del mismo intento
 - detenerse ante captcha, pantalla de pago o confirmación irreversible
 
 Límites:
