@@ -147,6 +147,22 @@ No tipea usuario ni clave. La idea es que user/pass ya estén cargados o guardad
 
 Como usa `PLAYWRIGHT_USER_DATA_DIR=.playwright-profile`, la sesión puede quedar guardada entre ejecuciones.
 
+Si querés que corra sin abrir una ventana de Chrome visible:
+
+```env
+PLAYWRIGHT_HEADLESS=true
+```
+
+Por defecto viene en `false` para que puedas ver el navegador.
+
+Si querés que se abra visible pero se minimice solo en Windows:
+
+```env
+PLAYWRIGHT_MINIMIZE_ON_START=true
+```
+
+Por defecto también viene en `false`.
+
 ## Parlantes con PowerShell
 
 Primero instalá el módulo:

@@ -33,6 +33,8 @@ const envSchema = z.object({
   ALARM_COOLDOWN_MINUTES: intFromEnv(0),
 
   PLAYWRIGHT_USER_DATA_DIR: z.string().default(".playwright-profile"),
+  PLAYWRIGHT_HEADLESS: boolFromEnv(false),
+  PLAYWRIGHT_MINIMIZE_ON_START: boolFromEnv(false),
   STATE_DIR: z.string().default("state"),
 
   LOGIN_ENABLED: boolFromEnv(true),
@@ -88,6 +90,8 @@ export const config = {
   alarmCooldownMinutes: parsed.ALARM_COOLDOWN_MINUTES,
 
   playwrightUserDataDir: path.resolve(parsed.PLAYWRIGHT_USER_DATA_DIR),
+  playwrightHeadless: parsed.PLAYWRIGHT_HEADLESS,
+  playwrightMinimizeOnStart: parsed.PLAYWRIGHT_MINIMIZE_ON_START,
   stateDir: path.resolve(parsed.STATE_DIR),
 
   loginEnabled: parsed.LOGIN_ENABLED,

@@ -11,7 +11,8 @@
     "start": "node dist/index.js",
     "test": "tsx --test tests/*.test.ts",
     "list-audio-devices": "powershell.exe -ExecutionPolicy Bypass -File scripts/list-audio-devices.ps1",
-    "set-speakers": "powershell.exe -ExecutionPolicy Bypass -File scripts/set-speakers.ps1"
+    "set-speakers": "powershell.exe -ExecutionPolicy Bypass -File scripts/set-speakers.ps1",
+    "minimize-browser": "powershell.exe -ExecutionPolicy Bypass -File scripts/minimize-browser.ps1"
   },
   "dependencies": {
     "dotenv": "^16.4.7",

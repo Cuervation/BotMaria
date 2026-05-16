@@ -1,4 +1,6 @@
 import { chromium } from "playwright";
+import { spawn } from "node:child_process";
+import path from "node:path";
 import { config } from "./config.js";
 import { MonitorAgent } from "./agents/monitorAgent.js";
 import { log, warn } from "./utils/logger.js";
@@ -12,12 +14,28 @@ async function main(): Promise<void> {
   log(`LOGIN_ENABLED=${config.loginEnabled}`);
 
   const context = await chromium.launchPersistentContext(config.playwrightUserDataDir, {
-    headless: false,
+    headless: config.playwrightHeadless,
     args: [
       "--autoplay-policy=no-user-gesture-required",
       "--disable-features=PreloadMediaEngagementData,MediaEngagementBypassAutoplayPolicies",
     ],
   });
+
+  if (config.playwrightMinimizeOnStart && !config.playwrightHeadless) {
+    const scriptPath = path.resolve("scripts/minimize-browser.ps1");
+    log("Minimizando ventana de Chrome en Windows...");
+
+    spawn("powershell.exe", [
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      scriptPath,
+    ], {
+      stdio: "ignore",
+      detached: true,
+      windowsHide: true,
+    }).unref();
+  }
 
   let shuttingDown = false;
 
